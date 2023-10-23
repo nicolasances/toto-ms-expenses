@@ -9,7 +9,6 @@ import { TotoControllerConfig } from './model/TotoControllerConfig'
 import { LazyValidator, ValidationError, Validator } from './validation/Validator';
 import { TotoDelegate } from './model/TotoDelegate';
 import { ExecutionContext } from './model/ExecutionContext';
-import { UserContext } from './model/UserContext';
 import { SmokeDelegate } from './dlg/SmokeDelegate';
 import { TotoRuntimeError } from './model/TotoRuntimeError';
 
@@ -26,6 +25,7 @@ export class TotoAPIController {
     apiName: string;
     logger: Logger;
     validator: Validator = new LazyValidator();
+    config: TotoControllerConfig;
 
     /**
      * The constructor requires the express app
@@ -38,6 +38,7 @@ export class TotoAPIController {
         this.app = express();
         this.apiName = apiName;
         this.logger = new Logger(apiName)
+        this.config = config;
 
         config.load().then(() => {
 
@@ -92,7 +93,7 @@ export class TotoAPIController {
 
                 this.logger.apiIn(req.headers['x-correlation-id'], 'GET', path);
 
-                const executionContext = new ExecutionContext(this.logger, this.apiName, String(req.headers['x-correlation-id']), String(req.headers['x-app-version']))
+                const executionContext = new ExecutionContext(this.logger, this.apiName, this.config, String(req.headers['x-correlation-id']), String(req.headers['x-app-version']))
 
                 // Execute the GET
                 delegate.do(req, userContext, executionContext).then((stream) => {
@@ -159,7 +160,7 @@ export class TotoAPIController {
                 // When done, call the delegate
                 fstream.on('close', () => {
 
-                    const executionContext = new ExecutionContext(this.logger, this.apiName, String(req.headers['x-correlation-id']), String(req.headers['x-app-version']))
+                    const executionContext = new ExecutionContext(this.logger, this.apiName, this.config, String(req.headers['x-correlation-id']), String(req.headers['x-app-version']))
 
                     delegate.do({ query: req.query, params: req.params, headers: req.headers, body: { filepath: dir + '/' + filename } }, userContext, executionContext).then((data) => {
                         // Success
@@ -203,7 +204,7 @@ export class TotoAPIController {
                 // Validating
                 const userContext = await this.validator.validate(req);
 
-                const executionContext = new ExecutionContext(this.logger, this.apiName, cid, String(req.headers['x-app-version']))
+                const executionContext = new ExecutionContext(this.logger, this.apiName, this.config, cid, String(req.headers['x-app-version']))
 
                 // Execute the GET
                 const data = await delegate.do(req, userContext, executionContext);
