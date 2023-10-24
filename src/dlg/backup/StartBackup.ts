@@ -1,12 +1,14 @@
+import fs from 'fs'
+import moment from 'moment-timezone';
 import { Request } from "express";
 import { ExecutionContext } from "../../controller/model/ExecutionContext";
 import { UserContext } from "../../controller/model/UserContext";
 import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { ControllerConfig } from "../../Config";
-import fs from 'fs'
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { Storage } from "@google-cloud/storage";
+import { correlationId } from '../../controller/util/CorrelationId';
 
 const storage = new Storage();
 
@@ -15,41 +17,58 @@ export class StartBackup implements TotoDelegate {
     async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
 
         const logger = execContext.logger;
-        const cid = execContext.cid;
+        const cid = execContext.cid ?? correlationId();
+        const bucketName = String(process.env.BACKUP_BUCKET);
+        const today = moment()
 
         let client;
 
-        // Iterate through the relevant collections
         try {
 
+            logger.compute(cid, `Starting Database Backup`)
+            
             const config = execContext.config as ControllerConfig;
-
+            
             client = await config.getMongoClient();
             const db = client.db(config.getDBName());
 
-            const cursor = db.collection(config.getCollections().expenses).find();
+            // Iterate through the relevant collections
+            for (let collection of Object.keys(config.getCollections())) {
 
-            fs.appendFileSync("expenses.json", "[");
-            while (await cursor.hasNext()) {
+                logger.compute(cid, `Starting Backup of collection ${collection}`)
 
-                const doc = await cursor.next();
+                // Get a cursor to scan that collection
+                const cursor = db.collection(collection).find();
 
-                fs.appendFileSync("expenses.json", JSON.stringify(doc));
-                if (await cursor.hasNext()) fs.appendFileSync("expenses.json", ",\n");
+                // Define the name of the file, as the current date (YYYYMMDD) followed by the name of the collection
+                const filename = `${today.format("YYYYMMDD")}-${collection}.json`;
+
+                // If a file already exists, delete it
+                fs.rmSync(filename, {force: true})
+
+                // Write line by line
+                while (await cursor.hasNext()) {
+    
+                    const doc = await cursor.next();
+    
+                    fs.appendFileSync(filename, JSON.stringify(doc));
+
+                }
+
+                // Upload the file to GCS
+                const bucket = storage.bucket(bucketName)
+                
+                await bucket.upload(filename)
+
+                logger.compute(cid, `Backup of collection ${collection} completed and uploaded on Bucket ${bucketName}. Filename [${filename}]`)
+                
             }
-            fs.appendFileSync("expenses.json", "]");
 
-            // Copy the data to GCS
-            const bucketName = "totoexperiments-expenses-backup";
+            // Delete old files
+            // TODO
 
-            let bucket = storage.bucket(bucketName)
-
-            console.log(`Bucket ${bucketName} exists? [${await bucket.exists()}]`);
+            logger.compute(cid, `Database Backup completed`)
             
-            await bucket.upload("expenses.json")
-
-            fs.rmSync("expenses.json", {force: true})
-
             return { backup: "done" }
 
         } catch (error) {

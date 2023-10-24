@@ -12,5 +12,7 @@ The backup process follows these steps:
 Only the last `x` files are saved on GCS. <br>
 The backup should run **every day** during the night. 
 
+The backup happens in the bucket that is provided **as an Environment Variable** (populated at build-time through Github Action and stored as a Github Action Environment Secret) called `BACKUP_BUCKET`. 
+
 ## Restore
 The restore is exposed **through an API**. <br>
