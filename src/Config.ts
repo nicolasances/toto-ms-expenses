@@ -21,7 +21,7 @@ export class ControllerConfig implements TotoControllerConfig {
     mongoPwd: string | undefined;
     mongoHost: string | undefined;
 
-    
+
     async load(): Promise<any> {
 
         let promises = [];
@@ -34,33 +34,35 @@ export class ControllerConfig implements TotoControllerConfig {
 
         promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-ms-expenses-mongo-user/versions/latest` }).then(([version]) => {
 
-            this.mongoHost = version.payload!.data!.toString();
+            this.mongoUser = version.payload!.data!.toString();
 
         }));
 
         promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-ms-expenses-mongo-pswd/versions/latest` }).then(([version]) => {
 
-            this.mongoHost = version.payload!.data!.toString();
+            this.mongoPwd = version.payload!.data!.toString();
 
         }));
 
         await Promise.all(promises);
-        
+
     }
-    
+
     getCustomAuthVerifier(): CustomAuthVerifier {
-        
+
         return new TotoAuthProvider("https://toto-ms-auth-6lv62poq7a-ew.a.run.app")
     }
-    
+
     getProps(): ValidatorProps {
-        
+
         return {}
     }
-    
+
     async getMongoClient() {
-        
-        const mongoUrl = `mongodb://${this.mongoUser}:${this.mongoPwd}@${this.mongoHost}:27017/expenses`
+
+        const mongoUrl = `mongodb://${this.mongoUser}:${this.mongoPwd}@${this.mongoHost}:27017`
+
+        console.log(mongoUrl);
 
         return await new MongoClient(mongoUrl).connect();
     }
