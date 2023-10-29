@@ -5,6 +5,7 @@ import { CustomAuthVerifier } from "../model/CustomAuthVerifier";
 import { Request } from "express";
 import { customAuthCheck } from "./CustomAuthCheck";
 import { UserContext } from "../model/UserContext";
+import { googleAuthCheck } from "./GoogleAuthCheck";
 
 /**
  * Base Validator for HTTP Requests 
@@ -37,9 +38,11 @@ export class Validator {
     // Extraction of the headers
     // Authorization & AuthProvider
     let authorizationHeader = req.headers['authorization'] ?? req.headers['Authorization'];
+    let authProvider = req.headers['auth-provider'] ?? "custom";
+    let clientID = req.headers['x-client-id'];
 
     // Correlation ID 
-    let cid = req.headers['x-correlation-id']
+    let cid: string = String(req.headers['x-correlation-id']) ?? "";
 
     // App Version
     let appVersion = req.headers['x-app-version'];
@@ -64,7 +67,8 @@ export class Validator {
 
       if (!authorizationHeader) throw new ValidationError(401, "No Authorization Header provided")
 
-      if (this.customAuthVerifier) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
+      if (authProvider == "custom" && this.customAuthVerifier) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
+      else if (authProvider == 'google') return await googleAuthCheck(cid, authorizationHeader, String(clientID), this.logger)
 
     }
 
