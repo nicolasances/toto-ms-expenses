@@ -1,12 +1,12 @@
 import { Request } from "express";
 import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { FakeRequest, TotoDelegate } from "../controller/model/TotoDelegate";
-import { UserContext } from "../controller/model/UserContext";
-import { ValidationError } from "../controller/validation/Validator";
-import { ControllerConfig } from "../Config";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
+import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { FakeRequest, TotoDelegate } from "../../controller/model/TotoDelegate";
+import { UserContext } from "../../controller/model/UserContext";
+import { ValidationError } from "../../controller/validation/Validator";
+import { ControllerConfig } from "../../Config";
+import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { ObjectId } from "mongodb";
 
 export class PostEvent implements TotoDelegate {
