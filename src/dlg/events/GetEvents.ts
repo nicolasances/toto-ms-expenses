@@ -6,6 +6,7 @@ import { ControllerConfig } from "../../Config";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { ExpenseModel } from "../../model/ExpenseModel";
 import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { Event, IEventPO } from "../../model/Event";
 
 export class GetEvents implements TotoDelegate {
 
@@ -17,9 +18,6 @@ export class GetEvents implements TotoDelegate {
         const config = execContext.config as ControllerConfig;
         const model = new ExpenseModel()
 
-        // 1. Validate
-        if (!query.user) throw new ValidationError(400, "No user provided")
-
         let client;
 
         try {
@@ -27,10 +25,18 @@ export class GetEvents implements TotoDelegate {
             client = await config.getMongoClient();
             const db = client.db(config.getDBName());
 
-            // 2. Update the expense with the event 
-            const events = await db.collection(config.getCollections().expenses).distinct("event", model.filterExpenses(query));
+            // Find all events of the user
+            const result = db.collection(config.getCollections().events).find(new Event({ user: userContext.email }))
 
-            // Done
+            const events = [];
+
+            while (await result.hasNext()) {
+
+                const event = await result.next() as unknown as IEventPO
+
+                events.push(new Event(event))
+            }
+
             return { events: events }
 
         } catch (error) {

@@ -11,7 +11,8 @@ const dbName = 'expenses';
 const collections = {
     expenses: 'expenses',
     settings: 'settings',
-    cron: 'cron'
+    cron: 'cron', 
+    events: 'events'
 };
 
 

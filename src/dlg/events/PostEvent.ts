@@ -8,6 +8,9 @@ import { ValidationError } from "../../controller/validation/Validator";
 import { ControllerConfig } from "../../Config";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { ObjectId } from "mongodb";
+import { Event, IEvent } from "../../model/Event";
+import moment from "moment";
+import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 
 export class PostEvent implements TotoDelegate {
 
@@ -19,8 +22,7 @@ export class PostEvent implements TotoDelegate {
         const config = execContext.config as ControllerConfig;
 
         // 1. Validate
-        if (!body.event) throw new ValidationError(400, "No event provided")
-        if (!body.expenseId) throw new ValidationError(400, "Missing expense ID to attach the event to")
+        if (!body.eventName) throw new ValidationError(400, "No event name provided")
 
         let client;
 
@@ -29,24 +31,22 @@ export class PostEvent implements TotoDelegate {
             client = await config.getMongoClient();
             const db = client.db(config.getDBName());
 
+            // Create an Event
+            const event = new Event({
+                name: body.eventName,
+                creationDate: moment().format("YYYYMMDD"),
+                amount: 0,
+                user: userContext.email
+            })
+
             // 2. Update the expense with the event 
-            await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(body.expenseId) }, { $set: { event: body.event } })
+            const result = await db.collection(config.getCollections().events).insertOne(event)
 
             // Done
-            return { updated: true }
+            return { eventId: result.insertedId }
 
         } catch (error) {
-
-            logger.compute(cid, `${error}`, "error")
-
-            if (error instanceof ValidationError || error instanceof TotoRuntimeError) {
-                throw error;
-            }
-            else {
-                console.log(error);
-                throw error;
-            }
-
+            basicallyHandleError(error, logger, cid);
         }
         finally {
             if (client) client.close();
