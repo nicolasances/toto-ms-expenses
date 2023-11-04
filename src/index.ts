@@ -4,16 +4,20 @@ import { ControllerConfig } from "./Config";
 import { PostExpense } from "./dlg/PostExpense";
 import { StartBackup } from "./dlg/backup/StartBackup";
 import { GetExpenses } from "./dlg/GetExpenses";
-import { PostEvent } from "./dlg/events/PostEvent";
-import { GetEvents } from "./dlg/events/GetEvents";
+import { PostTag } from "./dlg/tags/PostTag";
+import { GetTags } from "./dlg/tags/GetTags";
+import { DeleteTag } from './dlg/tags/DeleteTag';
+import { TagExpense } from "./dlg/TagExpense";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
 api.path("POST", "/expenses", new PostExpense())
 api.path("GET", "/expenses", new GetExpenses())
+api.path("POST", "/expenses/:id/tags", new TagExpense());
 
-api.path("POST", "/events", new PostEvent())
-api.path("GET", "/events", new GetEvents())
+api.path("POST", "/tags", new PostTag())
+api.path("GET", "/tags", new GetTags())
+api.path("DELETE", "/tags/:id", new DeleteTag());
 
 api.path("POST", "/backup", new StartBackup())
 

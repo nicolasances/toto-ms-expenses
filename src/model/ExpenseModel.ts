@@ -11,7 +11,7 @@ export interface IExpense {
   currency: string,
   user: string,
   monthly?: boolean,
-  event?: string
+  tags?: string
 }
 
 export interface PersistedExpense {
@@ -26,7 +26,7 @@ export interface PersistedExpense {
   currency: string,
   user: string,
   monthly?: boolean,
-  event?: string
+  tags?: string
 }
 
 export class ExpenseModel {
@@ -45,7 +45,7 @@ export class ExpenseModel {
       currency: po.currency,
       user: po.user,
       monthly: po.monthly,
-      event: po.event
+      tags: po.tags
     }
 
   }
