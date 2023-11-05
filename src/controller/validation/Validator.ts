@@ -7,6 +7,28 @@ import { customAuthCheck } from "./CustomAuthCheck";
 import { UserContext } from "../model/UserContext";
 import { googleAuthCheck } from "./GoogleAuthCheck";
 
+const decodeJWT = (authorizationHeader: string) => {
+
+  const token = String(authorizationHeader).substring('Bearer'.length + 1);
+
+  if (token !== null || token !== undefined) {
+      const base64String = token.split(`.`)[1];
+      const decodedValue = JSON.parse(Buffer.from(base64String, `base64`).toString(`ascii`));
+      return decodedValue;
+  }
+  return null;
+}
+
+const getAuthProvider = (tokenJson: any) => {
+
+  if (tokenJson.authProvider) return tokenJson.authProvider;
+
+  if (tokenJson.iss && tokenJson.iss == "https://accounts.google.com") return "google";
+
+  return "custom";
+
+}
+
 /**
  * Base Validator for HTTP Requests 
  */
@@ -38,7 +60,6 @@ export class Validator {
     // Extraction of the headers
     // Authorization & AuthProvider
     let authorizationHeader = req.headers['authorization'] ?? req.headers['Authorization'];
-    let authProvider = req.headers['auth-provider'] ?? "custom";
     let clientID = req.headers['x-client-id'];
 
     // Correlation ID 
@@ -66,6 +87,12 @@ export class Validator {
     if (this.props.noAuth == null || this.props.noAuth == false) {
 
       if (!authorizationHeader) throw new ValidationError(401, "No Authorization Header provided")
+
+      // Decode the JWT token
+      const decodedToken = decodeJWT(String(authorizationHeader))
+
+      // Retrieve the auth provider from the JWT Token
+      const authProvider = getAuthProvider(decodedToken);
 
       if (authProvider == "custom" && this.customAuthVerifier) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
       else if (authProvider == 'google') return await googleAuthCheck(cid, authorizationHeader, String(clientID), this.logger)
