@@ -12,10 +12,11 @@ export class ExpenseEventHandler implements TotoDelegate {
 
         const logger = execContext.logger;
         const cid = execContext.cid;
+        
+        logger.compute(cid, `Received message from PubSub`);
 
         const data = JSON.parse(String(Buffer.from(req.body.message.data, 'base64')));
 
-        logger.compute(cid, `Received message from PubSub`);
         logger.compute(cid, JSON.stringify(data));
 
         return { processed: true }

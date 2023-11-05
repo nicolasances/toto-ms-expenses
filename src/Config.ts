@@ -59,7 +59,8 @@ export class ControllerConfig implements TotoControllerConfig {
 
     getProps(): ValidatorProps {
 
-        return {}
+        return {
+        }
     }
 
     async getMongoClient() {
