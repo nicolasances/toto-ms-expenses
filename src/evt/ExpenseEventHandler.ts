@@ -17,6 +17,8 @@ export class ExpenseEventHandler implements TotoDelegate {
 
         const data = JSON.parse(String(Buffer.from(req.body.message.data, 'base64')));
 
+        console.log(req.body);
+        
         logger.compute(cid, JSON.stringify(data));
 
         return { processed: true }
