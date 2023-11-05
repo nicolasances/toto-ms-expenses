@@ -13,9 +13,12 @@ export class OnExpenseTagged extends AEventHandler {
         const logger = this.execContext.logger;
         const cid = this.execContext.cid;
 
+        const expenseId = msg.id;
         const tagId = msg.data.tagId;
 
         let client;
+
+        logger.compute(cid, `Event [${msg.type}] received. Expense [${expenseId}] has been tagged with tag [${tagId}]. Recaluating tag total.`)
 
         try {
 
@@ -35,8 +38,12 @@ export class OnExpenseTagged extends AEventHandler {
             // 1.3. Extract the total (sum) in EUR
             const totalInEuro = aggregationResult[0];
 
+            logger.compute(cid, `Tag Total recalculated: [EUR ${totalInEuro}]`)
+
             // 2. Update the tag
             await db.collection(config.getCollections().tags).updateOne({ _id: new ObjectId(tagId) }, { $set: { amountInEuro: totalInEuro } })
+
+            logger.compute(cid, `Event [${msg.type}] successfully handled.`)
 
         } catch (error) {
             basicallyHandleError(error, logger, cid);
