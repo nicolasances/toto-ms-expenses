@@ -25,15 +25,15 @@ export class Tag implements ITag {
     user: string;
     localCurrencyAmount?: number;
 
-    constructor(Tag: ITagPO) {
-        if (Tag.id) this.id = Tag.id;
-        if (Tag.name) this.name = Tag.name;
-        if (Tag.amountInEuro) this.amountInEuro = Tag.amountInEuro;
-        if (Tag.amountInEuro) this.localCurrencyAmount = Tag.amountInEuro;
-        if (Tag.creationDate) this.creationDate = Tag.creationDate;
-        this.user = Tag.user;
+    constructor(tag: ITagPO) {
+        if (tag.id) this.id = tag.id;
+        if (tag.name) this.name = tag.name;
+        if (tag.amountInEuro) this.amountInEuro = tag.amountInEuro;
+        if (tag.amountInEuro) this.localCurrencyAmount = tag.amountInEuro;
+        if (tag.creationDate) this.creationDate = tag.creationDate;
+        this.user = tag.user;
 
-        if (Tag._id) this.id = Tag._id.toString();
+        if (tag._id) this.id = tag._id.toString();
     }
 
 }
