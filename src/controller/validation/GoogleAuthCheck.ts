@@ -1,4 +1,5 @@
 import { Logger } from "../../logger/TotoLogger";
+import { AUTH_PROVIDERS } from "../model/AuthProviders";
 
 const { OAuth2Client } = require('google-auth-library');
 
@@ -11,28 +12,28 @@ const decodeJWT = (token: string | null) => {
     return null;
 }
 
-export async function googleAuthCheck(cid: string, authorizationHeader: string | string[] | undefined, clientID: string, logger: Logger) {
+export async function googleAuthCheck(cid: string, authorizationHeader: string | string[] | undefined, expectedAudience: string, logger: Logger) {
 
     const token: string | null = authorizationHeader ? String(authorizationHeader).substring('Bearer'.length + 1) : null;
 
-    const client = new OAuth2Client(clientID);
+    const client = new OAuth2Client(expectedAudience);
 
     const decodedToken = decodeJWT(token)
 
     // Useful for debugging audience-related issues
-    if (decodedToken.aud != clientID) {
+    if (decodedToken.aud != expectedAudience) {
         logger.compute(cid, `Payload Audience: ${decodedToken.aud}`, "error");
-        logger.compute(cid, `Target Audience: ${clientID}`, "error");
+        logger.compute(cid, `Expected Audience: ${expectedAudience}`, "error");
     }
 
-    const ticket = await client.verifyIdToken({ idToken: token, audience: clientID })
+    const ticket = await client.verifyIdToken({ idToken: token, audience: expectedAudience })
 
     let payload = ticket.getPayload();
 
     return {
         userId: payload.sub,
         email: payload.email,
-        authProvider: 'google'
+        authProvider: AUTH_PROVIDERS.google
     }
 
 }

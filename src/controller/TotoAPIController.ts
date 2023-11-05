@@ -42,7 +42,7 @@ export class TotoAPIController {
 
         config.load().then(() => {
 
-            this.validator = new Validator(config.getProps(), this.logger, config.getCustomAuthVerifier());
+            this.validator = new Validator(config, this.logger);
 
         });
 

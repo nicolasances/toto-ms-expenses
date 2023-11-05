@@ -24,6 +24,7 @@ export class ControllerConfig implements TotoControllerConfig {
     mongoUser: string | undefined;
     mongoPwd: string | undefined;
     mongoHost: string | undefined;
+    expectedAudience: string | undefined;
 
 
     async load(): Promise<any> {
@@ -33,6 +34,12 @@ export class ControllerConfig implements TotoControllerConfig {
         promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/mongo-host/versions/latest` }).then(([version]) => {
 
             this.mongoHost = version.payload!.data!.toString();
+
+        }));
+
+        promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-expected-audience/versions/latest` }).then(([version]) => {
+
+            this.expectedAudience = version.payload!.data!.toString();
 
         }));
 
@@ -68,6 +75,12 @@ export class ControllerConfig implements TotoControllerConfig {
         const mongoUrl = `mongodb://${this.mongoUser}:${this.mongoPwd}@${this.mongoHost}:27017`
 
         return await new MongoClient(mongoUrl).connect();
+    }
+    
+    getExpectedAudience(): string {
+        
+        return String(this.expectedAudience)
+        
     }
 
     getDBName() { return dbName }
