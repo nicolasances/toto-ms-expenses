@@ -25,6 +25,7 @@ export class ControllerConfig implements TotoControllerConfig {
     mongoPwd: string | undefined;
     mongoHost: string | undefined;
     expectedAudience: string | undefined;
+    totoAuthEndpoint: string | undefined;
 
 
     async load(): Promise<any> {
@@ -55,13 +56,19 @@ export class ControllerConfig implements TotoControllerConfig {
 
         }));
 
+        promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-auth-endpoint/versions/latest` }).then(([version]) => {
+
+            this.totoAuthEndpoint = version.payload!.data!.toString();
+
+        }));
+
+
         await Promise.all(promises);
 
     }
 
     getCustomAuthVerifier(): CustomAuthVerifier {
-
-        return new TotoAuthProvider("https://toto-ms-auth-6lv62poq7a-ew.a.run.app")
+        return new TotoAuthProvider(String(this.totoAuthEndpoint))
     }
 
     getProps(): ValidatorProps {
