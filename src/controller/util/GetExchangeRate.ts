@@ -1,37 +1,83 @@
 import request from 'request'
 import moment from 'moment-timezone'
+import { ExecutionContext } from '../model/ExecutionContext';
 
-const exchangeRateUrl = 'https://v3.exchangerate-api.com/pair/4c53838ecdaca2a7f1849fb3';
+const exchangeRateUrl = 'https://v3.exchangerate-api.com/pair/125b58078cb8ba5b129942e9';
 
-export function getExchangeRate(currency: string): Promise<Rate> {
+export class CurrencyConversion {
 
-  return new Promise(function (success, failure) {
+  execContext: ExecutionContext;
 
-    var data = {
-      url: `${exchangeRateUrl}/${currency}/EUR`,
-      headers: {
-        'User-Agent': 'node.js',
-        'Accept': 'application/json'
-      }
-    };
+  constructor(execContext: ExecutionContext) {
+    this.execContext = execContext;
+  }
 
-    request.get(data, function (error, response, body) {
+  getExchangeRate(currency: string): Promise<Rate> {
 
-      var rates = JSON.parse(body);
+    return new Promise(function (success, failure) {
 
-      // Fallback: if I went over the quota
-      // TEMPORARY!!
-      // TO BE FIXED: cache every day the rate, since it only changes once a day
-      if (rates.error) {
-        if (currency == 'DKK') rates.rate = 0.13;
-      }
+      var data = {
+        url: `${exchangeRateUrl}/${currency}/EUR`,
+        headers: {
+          'User-Agent': 'node.js',
+          'Accept': 'application/json'
+        }
+      };
 
-      success({ rate: rates.rate });
+      request.get(data, function (error, response, body) {
+
+        var rates = JSON.parse(body);
+
+        // Fallback: if I went over the quota
+        // TEMPORARY!!
+        // TO BE FIXED: cache every day the rate, since it only changes once a day
+        if (rates.error) {
+          if (currency == 'DKK') rates.rate = 0.13;
+        }
+
+        success({ rate: rates.rate });
+
+      });
 
     });
+  }
 
-  });
+  convertEURToTargetCurrency(targetCurrency: string): Promise<Rate> {
+
+    return new Promise( (success, failure) =>  {
+
+      var data = {
+        url: `${exchangeRateUrl}/EUR/${targetCurrency}`,
+        headers: {
+          'User-Agent': 'node.js',
+          'Accept': 'application/json'
+        }
+      };
+
+      request.get(data, (error, response, body) => {
+
+        var rates = JSON.parse(body);
+
+        // Fallback: if I went over the quota
+        // TEMPORARY!!
+        // TO BE FIXED: cache every day the rate, since it only changes once a day
+        if (rates.error) {
+          
+          this.execContext.logger.compute(this.execContext.cid, rates.error, "error")
+          
+          if (targetCurrency == 'DKK') rates.rate = 7.5;
+        }
+
+        success({ rate: rates.rate });
+
+      });
+
+    });
+  }
+
 }
+
+
 
 export interface Rate {
 

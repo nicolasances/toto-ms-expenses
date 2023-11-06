@@ -114,7 +114,7 @@ export class Validator {
       // That is the audience that is expected to be found in the token
       const expectedAudience = this.config.getExpectedAudience();
 
-      if (authProvider == AUTH_PROVIDERS.custom && this.customAuthVerifier) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
+      if (this.customAuthVerifier && authProvider == this.customAuthVerifier.getAuthProvider()) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
       else if (authProvider == AUTH_PROVIDERS.google) return await googleAuthCheck(cid, authorizationHeader, String(expectedAudience), this.logger)
 
     }

@@ -7,6 +7,9 @@ import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { Tag, ITagPO, convertCurrency } from "../../model/Tag";
 import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 
+/**
+ * Retrieves the list of tags created by the user
+ */
 export class GetTags implements TotoDelegate {
 
     async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
@@ -14,6 +17,8 @@ export class GetTags implements TotoDelegate {
         const logger = execContext.logger;
         const cid = execContext.cid;
         const config = execContext.config as ControllerConfig;
+
+        // Target currency should be provided in the request query parameters. Default is EUR
         const targetCurrency = req.query.targetCurrency ?? "EUR";
 
         let client;
@@ -34,7 +39,7 @@ export class GetTags implements TotoDelegate {
 
                 const tag = await result.next() as unknown as ITagPO
 
-                tags.push(await convertCurrency(new Tag(tag), String(targetCurrency)))
+                tags.push(await convertCurrency(new Tag(tag), String(targetCurrency), execContext))
             }
 
             return { tags: tags }

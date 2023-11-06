@@ -10,6 +10,10 @@ export class TotoAuthProvider implements CustomAuthVerifier {
         this.authAPIEndpoint = authAPIEndpoint;
     }
 
+    getAuthProvider(): string {
+        return "toto"
+    }
+
     async verifyIdToken(idToken: IdToken): Promise<AuthCheckResult> {
 
         console.log("Validating custom token");
