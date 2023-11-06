@@ -43,7 +43,7 @@ export async function convertCurrency(tag: Tag, targetCurrency: string, execCont
 
     if (targetCurrency == "EUR") return tag;
 
-    const rate = await new CurrencyConversion(execContext).convertEURToTargetCurrency(targetCurrency);
+    const rate = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(targetCurrency);
 
     tag.localCurrencyAmount = rate.rate * tag.amountInEuro!;
 
