@@ -76,4 +76,7 @@ export const EXPENSE_EVENTS = {
     // A transaction has been tagged
     expenseTagged: "expenseTagged",
 
+    // A transaction has been untagged
+    expenseUntagged: "expenseUntagged", 
+
 }
