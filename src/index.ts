@@ -16,7 +16,7 @@ const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 api.path("POST", "/expenses", new PostExpense())
 api.path("GET", "/expenses", new GetExpenses())
 api.path("POST", "/expenses/:id/tags", new TagExpense());
-api.path("DELETE", "/expenses/:id/tags/tagId", new UntagExpense());
+api.path("DELETE", "/expenses/:id/tags/:tagId", new UntagExpense());
 
 api.path("POST", "/tags", new PostTag())
 api.path("GET", "/tags", new GetTags())
