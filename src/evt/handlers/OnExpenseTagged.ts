@@ -4,7 +4,7 @@ import { ExecutionContext } from "../../controller/model/ExecutionContext";
 import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 import { AEventHandler, EventHandlingResult } from "../EventHanlder";
 import { TotoEvent } from "../TotoEvent";
-import { EXPENSE_EVENTS } from "../ExpenseEventPublisher";
+import { EVENTS } from "../EventPublisher";
 
 export class OnExpenseTagged extends AEventHandler {
 
@@ -17,7 +17,7 @@ export class OnExpenseTagged extends AEventHandler {
         // Only care about two events: 
         // - expenseTagged
         // - expenseUntagged
-        if (msg.type != EXPENSE_EVENTS.expenseTagged && msg.type != EXPENSE_EVENTS.expenseUntagged) return {}
+        if (msg.type != EVENTS.expenseTagged && msg.type != EVENTS.expenseUntagged) return {}
 
         // Extract expenseId and tagId
         // Note that the tagId is important also when untagging an expense, since we need to recalculate that specific tag

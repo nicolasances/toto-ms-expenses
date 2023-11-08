@@ -6,7 +6,7 @@ import { ControllerConfig } from "../Config";
 import { ObjectId } from "mongodb";
 import { basicallyHandleError } from "../controller/util/ErrorUtil";
 import { TotoDelegate } from "../controller/model/TotoDelegate";
-import { EXPENSE_EVENTS, ExpenseEventPublisher } from "../evt/ExpenseEventPublisher";
+import { EVENTS, EventPublisher } from "../evt/EventPublisher";
 
 /**
  * Untags a specific expense, i.e. removes a specific tag from that expense
@@ -38,7 +38,7 @@ export class UntagExpense implements TotoDelegate {
             const updateExpenseResult = await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(expenseId) }, { $pull: { tags: tagId } })
 
             // 2. Publish an tag with the updated "tag" 
-            const publishingResult = await new ExpenseEventPublisher(execContext).publishEvent(expenseId, EXPENSE_EVENTS.expenseUntagged, `Tag ${tagId} was removed from expense ${expenseId} `, { tagId: tagId })
+            const publishingResult = await new EventPublisher(execContext, "expenses").publishEvent(expenseId, EVENTS.expenseUntagged, `Tag ${tagId} was removed from expense ${expenseId} `, { tagId: tagId })
 
             // 3. Return 
             return { modifiedExpenses: updateExpenseResult.modifiedCount, expenseUntaggedEventPublished: publishingResult.published }

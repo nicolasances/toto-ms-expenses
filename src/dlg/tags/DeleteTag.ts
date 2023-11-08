@@ -7,6 +7,7 @@ import { ObjectId } from "mongodb";
 import { Tag, ITag } from "../../model/Tag";
 import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { EVENTS, EventPublisher } from "../../evt/EventPublisher";
 
 export class DeleteTag implements TotoDelegate {
 
@@ -19,6 +20,8 @@ export class DeleteTag implements TotoDelegate {
         // 1. Validate
         if (!req.params.id) throw new ValidationError(400, "No tag id provided")
 
+        const tagId = req.params.id;
+
         let client;
 
         try {
@@ -29,8 +32,11 @@ export class DeleteTag implements TotoDelegate {
             // Delete the tag
             const result = await db.collection(config.getCollections().tags).deleteOne({ _id: new ObjectId(req.params.id), user: userContext.email })
 
+            // Publish an event
+            const publishingResults = await new EventPublisher(execContext, "tags").publishEvent(tagId, EVENTS.tagDeleted, `Tag ${tagId} has been deleted`);
+
             // Done
-            return { deletedTags: result.deletedCount }
+            return { deletedTags: result.deletedCount, eventPublished: publishingResults.published }
 
         } catch (error) {
             basicallyHandleError(error, logger, cid);

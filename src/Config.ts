@@ -14,10 +14,6 @@ const collections = {
     cron: 'cron',
     tags: 'tags'
 };
-const topics = {
-    expenses: 'expenses'
-}
-
 
 export class ControllerConfig implements TotoControllerConfig {
 
@@ -92,6 +88,5 @@ export class ControllerConfig implements TotoControllerConfig {
 
     getDBName() { return dbName }
     getCollections() { return collections }
-    getTopics() { return topics }
 
 }

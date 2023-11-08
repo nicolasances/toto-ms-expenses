@@ -117,4 +117,24 @@ export class ExpenseModel {
 
     return {};
   }
+
+  /**
+   * Finds all the expenses with the specified tag
+   * @param tagId the tag ID
+   */
+  findExpensesWithTag(tagId: string) {
+    
+    return {
+      tags: tagId
+    }
+  }
+
+  updateRemoveTag(tagId: string) {
+
+    return {
+      $set: {
+        $pull: {tags: tagId}
+      }
+    }
+  }
 }

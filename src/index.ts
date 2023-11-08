@@ -25,5 +25,6 @@ api.path("DELETE", "/tags/:id", new DeleteTag());
 api.path("POST", "/backup", new StartBackup())
 
 api.path("POST", "/events", new EventHandlerHook())
+api.path("POST", "/events/tag", new EventHandlerHook())
 
 api.listen()

@@ -7,6 +7,8 @@ import { UserContext } from "../controller/model/UserContext";
 import { OnExpenseTagged } from "./handlers/OnExpenseTagged";
 import { TotoEvent } from "./TotoEvent";
 import { AEventHandler } from "./EventHanlder";
+import { OnTagDeleted } from "./handlers/OnTagDeleted";
+import { EVENTS } from "./EventPublisher";
 
 export class EventHandlerHook implements TotoDelegate {
 
@@ -19,9 +21,9 @@ export class EventHandlerHook implements TotoDelegate {
 
         const HANDLERS: IIndexable = {
 
-            expenseTagged: [
-                new OnExpenseTagged(execContext)
-            ]
+            [EVENTS.expenseTagged]: [new OnExpenseTagged(execContext)],
+            [EVENTS.expenseUntagged]: [new OnExpenseTagged(execContext)],
+            [EVENTS.tagDeleted]: [new OnTagDeleted(execContext)]
 
         }
 
