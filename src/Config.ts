@@ -75,6 +75,11 @@ export class ControllerConfig implements TotoControllerConfig {
 
     async getMongoClient() {
 
+        while (!this.mongoHost) {
+            console.log("Mongo Configuration not loaded yet. Waiting.. ");
+            await sleep(200);
+        }
+
         const mongoUrl = `mongodb://${this.mongoUser}:${this.mongoPwd}@${this.mongoHost}:27017`
 
         return await new MongoClient(mongoUrl).connect();
@@ -89,4 +94,8 @@ export class ControllerConfig implements TotoControllerConfig {
     getDBName() { return dbName }
     getCollections() { return collections }
 
+}
+
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
