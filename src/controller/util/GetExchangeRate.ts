@@ -64,7 +64,7 @@ export class CurrencyConversion {
         // Fallback: if I went over the quota
         // TEMPORARY!!
         // TO BE FIXED: cache every day the rate, since it only changes once a day
-        if (error || rates.errors) {
+        if (error || rates.errors || !rates) {
           
           this.execContext.logger.compute(this.execContext.cid, rates.errors, "error")
           
