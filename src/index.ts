@@ -27,4 +27,6 @@ api.path("POST", "/backup", new StartBackup())
 api.path("POST", "/events", new EventHandlerHook())
 api.path("POST", "/events/tag", new EventHandlerHook())
 
-api.listen()
+api.init().then(() => {
+    api.listen()
+});
