@@ -32,7 +32,7 @@ export class GetTag implements TotoDelegate {
             const db = client.db(config.getDBName());
 
             // Find all tags of the user
-            const tag = db.collection(config.getCollections().tags).findOne({ _id: new ObjectId(tagId) })
+            const tag = await db.collection(config.getCollections().tags).findOne({ _id: new ObjectId(tagId) })
 
             const tagTO = await convertCurrency(new Tag(tag as unknown as ITagPO), String(targetCurrency), execContext);
 
