@@ -10,6 +10,7 @@ import { DeleteTag } from './dlg/tags/DeleteTag';
 import { TagExpense } from "./dlg/TagExpense";
 import { EventHandlerHook } from "./evt/EventHandlerHook";
 import { UntagExpense } from "./dlg/UntagExpense";
+import { GetTagExpenses } from "./dlg/tags/GetTagExpenses";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -21,6 +22,7 @@ api.path("DELETE", "/expenses/:id/tags/:tagId", new UntagExpense());
 api.path("POST", "/tags", new PostTag())
 api.path("GET", "/tags", new GetTags())
 api.path("DELETE", "/tags/:id", new DeleteTag());
+api.path("GET", "/tags/:id/expenses", new GetTagExpenses());
 
 api.path("POST", "/backup", new StartBackup())
 
