@@ -131,8 +131,6 @@ export class ExpenseModel {
 
   updateRemoveTag(tagId: string) {
 
-    return {
-      $pull: { tags: tagId }
-    }
+    return { $pull: { tags: tagId } }
   }
 }

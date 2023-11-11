@@ -38,7 +38,7 @@ export class OnTagDeleted extends AEventHandler {
             const taggedExpenses = new ExpenseModel().findExpensesWithTag(tagId);
 
             // 2. Create the update: remove the tag from the list of tags
-            const removeTag = new ExpenseModel().updateRemoveTag(tagId);
+            const removeTag = new ExpenseModel().updateRemoveTag(tagId) as any;
 
             // 3. Remove the tag from all expenses.
             const updateResult = await db.collection(config.getCollections().expenses).updateMany(taggedExpenses, removeTag);
