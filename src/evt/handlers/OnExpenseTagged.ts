@@ -37,7 +37,8 @@ export class OnExpenseTagged extends AEventHandler {
             // 1.1. Prepare the aggregate
             let aggregate = [
                 { $match: { tags: tagId } },
-                { $group: { _id: { year: '$year' }, amount: { $sum: '$amountInEuro' }, numExpenses: { $count: 1 } } },
+                { $group: { _id: { year: '$year' }, amount: { $sum: '$amountInEuro' } } },
+                { $count: 1 }
             ]
 
             // 1.2. Execute the aggregate
