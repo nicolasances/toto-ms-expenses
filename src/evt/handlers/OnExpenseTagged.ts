@@ -44,6 +44,9 @@ export class OnExpenseTagged extends AEventHandler {
             // 1.2. Execute the aggregate
             const aggregationResult = await db.collection(config.getCollections().expenses).aggregate(aggregate).toArray();
 
+            console.log(aggregationResult);
+            
+
             // 1.3. Extract the total (sum) in EUR
             const totalInEuro = aggregationResult[0].amount;
             const numExpenses = aggregationResult[0].numExpenses;
