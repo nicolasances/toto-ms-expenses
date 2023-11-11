@@ -37,7 +37,7 @@ export class OnExpenseTagged extends AEventHandler {
             // 1.1. Prepare the aggregate
             let aggregate = [
                 { $match: { tags: tagId } },
-                { $group: { _id: { year: '$year' }, amount: { $sum: '$amountInEuro' } } },
+                { $group: { _id: { year: '$year' }, amount: { $sum: '$amountInEuro' }, numExpenses: { $count: 1 } } },
             ]
 
             // 1.2. Execute the aggregate
@@ -45,11 +45,12 @@ export class OnExpenseTagged extends AEventHandler {
 
             // 1.3. Extract the total (sum) in EUR
             const totalInEuro = aggregationResult[0].amount;
+            const numExpenses = aggregationResult[0].numExpenses;
 
             logger.compute(cid, `Tag Total recalculated: [EUR ${totalInEuro}]`)
 
             // 2. Update the tag
-            await db.collection(config.getCollections().tags).updateOne({ _id: new ObjectId(tagId) }, { $set: { amountInEuro: totalInEuro } })
+            await db.collection(config.getCollections().tags).updateOne({ _id: new ObjectId(tagId) }, { $set: { amountInEuro: totalInEuro, numExpenses: numExpenses } })
 
             logger.compute(cid, `Event [${msg.type}] successfully handled.`)
 

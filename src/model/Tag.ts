@@ -9,6 +9,7 @@ export interface ITag {
     name?: string,
     amountInEuro?: number,
     creationDate?: string,  // Format YYYYMMDD
+    numExpenses?: number,
     user: string
 
 }
@@ -23,6 +24,7 @@ export class Tag implements ITag {
     name?: string;
     amountInEuro?: number;
     creationDate?: string;
+    numExpenses?: number;
     user: string;
     localCurrencyAmount?: number;
 
@@ -32,6 +34,7 @@ export class Tag implements ITag {
         if (tag.amountInEuro) this.amountInEuro = tag.amountInEuro;
         if (tag.amountInEuro) this.localCurrencyAmount = tag.amountInEuro;
         if (tag.creationDate) this.creationDate = tag.creationDate;
+        if (tag.numExpenses) this.numExpenses = tag.numExpenses;
         this.user = tag.user;
 
         if (tag._id) this.id = tag._id.toString();
