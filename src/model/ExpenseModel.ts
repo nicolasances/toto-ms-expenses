@@ -123,7 +123,7 @@ export class ExpenseModel {
    * @param tagId the tag ID
    */
   findExpensesWithTag(tagId: string) {
-    
+
     return {
       tags: tagId
     }
@@ -132,9 +132,7 @@ export class ExpenseModel {
   updateRemoveTag(tagId: string) {
 
     return {
-      $set: {
-        $pull: {tags: tagId}
-      }
+      $pull: { tags: tagId }
     }
   }
 }
