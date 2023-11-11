@@ -34,27 +34,32 @@ export class OnExpenseTagged extends AEventHandler {
             const db = client.db(config.getDBName());
 
             // 1. Find all expenses with that tag and calculate the sum of the amount (in EUR)
-            // 1.1. Prepare the aggregate
+            // 1.1. Prepare the aggregate for the total amount
             let aggregate = [
                 { $match: { tags: tagId } },
-                { $group: { _id: { year: '$year' }, amount: { $sum: '$amountInEuro' } } },
-                { $count: 1 }
+                { $group: { _id: 1, amount: { $sum: '$amountInEuro' }, maxDate: { $max: "$date" }, minDate: { $min: "$date" } } },
             ]
 
-            // 1.2. Execute the aggregate
-            const aggregationResult = await db.collection(config.getCollections().expenses).aggregate(aggregate).toArray();
+            // 1.2. Aggregate for the count of expenses
+            let aggCount = [
+                { $math: { tags: tagId } },
+                { $count: "numExpenses" }
+            ]
 
-            console.log(aggregationResult);
-            
+            // Execute the aggregate
+            const aggregationResult = await db.collection(config.getCollections().expenses).aggregate(aggregate).toArray();
+            const aggCountResult = await db.collection(config.getCollections().expenses).aggregate(aggCount).toArray();
 
             // 1.3. Extract the total (sum) in EUR
             const totalInEuro = aggregationResult[0].amount;
-            const numExpenses = aggregationResult[0].numExpenses;
+            const minDate = aggregationResult[0].minDate;
+            const maxDate = aggregationResult[0].maxDate;
+            const numExpenses = aggCountResult[0].numExpenses;
 
-            logger.compute(cid, `Tag Total recalculated: [EUR ${totalInEuro}]`)
+            logger.compute(cid, `Tag Total recalculated: [EUR ${totalInEuro}]. Num expenses: [${numExpenses}]`)
 
             // 2. Update the tag
-            await db.collection(config.getCollections().tags).updateOne({ _id: new ObjectId(tagId) }, { $set: { amountInEuro: totalInEuro, numExpenses: numExpenses } })
+            await db.collection(config.getCollections().tags).updateOne({ _id: new ObjectId(tagId) }, { $set: { amountInEuro: totalInEuro, numExpenses: numExpenses, minDate: minDate, maxDate: maxDate } })
 
             logger.compute(cid, `Event [${msg.type}] successfully handled.`)
 

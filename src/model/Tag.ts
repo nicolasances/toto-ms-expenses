@@ -10,6 +10,8 @@ export interface ITag {
     amountInEuro?: number,
     creationDate?: string,  // Format YYYYMMDD
     numExpenses?: number,
+    minDate?: string // YYYYMMDD
+    maxDate?: string // YYYYMMDD
     user: string
 
 }
@@ -25,6 +27,8 @@ export class Tag implements ITag {
     amountInEuro?: number;
     creationDate?: string;
     numExpenses?: number;
+    minDate?: string;
+    maxDate?: string;
     user: string;
     localCurrencyAmount?: number;
 
@@ -35,6 +39,8 @@ export class Tag implements ITag {
         if (tag.amountInEuro) this.localCurrencyAmount = tag.amountInEuro;
         if (tag.creationDate) this.creationDate = tag.creationDate;
         if (tag.numExpenses) this.numExpenses = tag.numExpenses;
+        if (tag.minDate) this.minDate = tag.minDate;
+        if (tag.maxDate) this.maxDate = tag.maxDate;
         this.user = tag.user;
 
         if (tag._id) this.id = tag._id.toString();
