@@ -42,7 +42,7 @@ export class OnExpenseTagged extends AEventHandler {
 
             // 1.2. Aggregate for the count of expenses
             let aggCount = [
-                { $math: { tags: tagId } },
+                { $match: { tags: tagId } },
                 { $count: "numExpenses" }
             ]
 
