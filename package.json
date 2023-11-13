@@ -7,12 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "npx nodemon",
     "build": "rm -rf ./build && tsc",
-    "start": "npm run build && node build/index.js"
+    "start": "node build/index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@google-cloud/firestore": "^7.1.0",
+    "@google-cloud/pubsub": "^4.0.6",
     "@google-cloud/secret-manager": "^5.0.1",
     "@google-cloud/storage": "^7.3.1",
     "apple-signin-auth": "^1.5.1",

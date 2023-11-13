@@ -6,6 +6,43 @@ import { Request } from "express";
 import { customAuthCheck } from "./CustomAuthCheck";
 import { UserContext } from "../model/UserContext";
 import { googleAuthCheck } from "./GoogleAuthCheck";
+import { TotoControllerConfig } from "../model/TotoControllerConfig";
+import { AUTH_PROVIDERS } from "../model/AuthProviders";
+
+/**
+ * Extracts the Bearer token from the HTTP Authorization header and decodes it
+ * @param authorizationHeader HTTP Auth header
+ * @returns a decoded JWT token as a json object
+ */
+const decodeJWT = (authorizationHeader: string) => {
+
+  const token = String(authorizationHeader).substring('Bearer'.length + 1);
+
+  if (token !== null || token !== undefined) {
+    const base64String = token.split(`.`)[1];
+    const decodedValue = JSON.parse(Buffer.from(base64String, `base64`).toString(`ascii`));
+    return decodedValue;
+  }
+  return null;
+}
+
+/**
+ * Finds out what the Auth Provider of the JWT token is. 
+ * For tokens created by toto-auth, the auth provider is provided in the JWT token as a specific "authProvider" field.
+ * For tokens created by other IDPs, look at the iss field of the JWT Token
+ * 
+ * @param tokenJson the JWT token as a json object
+ * @returns the auth provider based on the JWT token
+ */
+const getAuthProvider = (tokenJson: any) => {
+
+  if (tokenJson.authProvider) return tokenJson.authProvider;
+
+  if (tokenJson.iss && tokenJson.iss == "https://accounts.google.com") return "google";
+
+  return "custom";
+
+}
 
 /**
  * Base Validator for HTTP Requests 
@@ -15,6 +52,7 @@ export class Validator {
   props: ValidatorProps;
   logger: Logger;
   customAuthVerifier?: CustomAuthVerifier;
+  config: TotoControllerConfig;
 
   /**
    * 
@@ -22,10 +60,11 @@ export class Validator {
    * @param {object} logger the toto logger
    * @param {object} customAuthVerifier a custom auth verifier
    */
-  constructor(props: ValidatorProps, logger: Logger, customAuthVerifier?: CustomAuthVerifier) {
-    this.props = props;
+  constructor(config: TotoControllerConfig, logger: Logger) {
+    this.props = config.getProps();
     this.logger = logger;
-    this.customAuthVerifier = customAuthVerifier;
+    this.customAuthVerifier = config.getCustomAuthVerifier();
+    this.config = config;
   }
 
   /**
@@ -38,8 +77,6 @@ export class Validator {
     // Extraction of the headers
     // Authorization & AuthProvider
     let authorizationHeader = req.headers['authorization'] ?? req.headers['Authorization'];
-    let authProvider = req.headers['auth-provider'] ?? "custom";
-    let clientID = req.headers['x-client-id'];
 
     // Correlation ID 
     let cid: string = String(req.headers['x-correlation-id']) ?? "";
@@ -67,8 +104,18 @@ export class Validator {
 
       if (!authorizationHeader) throw new ValidationError(401, "No Authorization Header provided")
 
-      if (authProvider == "custom" && this.customAuthVerifier) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
-      else if (authProvider == 'google') return await googleAuthCheck(cid, authorizationHeader, String(clientID), this.logger)
+      // Decode the JWT token
+      const decodedToken = decodeJWT(String(authorizationHeader))
+
+      // Retrieve the auth provider from the JWT Token
+      const authProvider = getAuthProvider(decodedToken);
+
+      // Retrieve the audience that the token will be validated against
+      // That is the audience that is expected to be found in the token
+      const expectedAudience = this.config.getExpectedAudience();
+
+      if (this.customAuthVerifier && authProvider == this.customAuthVerifier.getAuthProvider()) return await customAuthCheck(cid, authorizationHeader, this.customAuthVerifier, this.logger);
+      else if (authProvider == AUTH_PROVIDERS.google) return await googleAuthCheck(cid, authorizationHeader, String(expectedAudience), this.logger)
 
     }
 
@@ -93,7 +140,24 @@ export class ValidationError extends Error {
 export class LazyValidator extends Validator {
 
   constructor() {
-    super({}, new Logger(""));
+    super(new ConfigMock(), new Logger(""));
+  }
+
+}
+
+export class ConfigMock implements TotoControllerConfig {
+
+  async load(): Promise<any> {
+    return {}
+  }
+  getCustomAuthVerifier(): CustomAuthVerifier | undefined {
+    return undefined;
+  }
+  getProps(): ValidatorProps {
+    return {}
+  }
+  getExpectedAudience(): string {
+    return ""
   }
 
 }

@@ -11,15 +11,17 @@ const dbName = 'expenses';
 const collections = {
     expenses: 'expenses',
     settings: 'settings',
-    cron: 'cron'
+    cron: 'cron',
+    tags: 'tags'
 };
-
 
 export class ControllerConfig implements TotoControllerConfig {
 
     mongoUser: string | undefined;
     mongoPwd: string | undefined;
     mongoHost: string | undefined;
+    expectedAudience: string | undefined;
+    totoAuthEndpoint: string | undefined;
 
 
     async load(): Promise<any> {
@@ -29,6 +31,12 @@ export class ControllerConfig implements TotoControllerConfig {
         promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/mongo-host/versions/latest` }).then(([version]) => {
 
             this.mongoHost = version.payload!.data!.toString();
+
+        }));
+
+        promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-expected-audience/versions/latest` }).then(([version]) => {
+
+            this.expectedAudience = version.payload!.data!.toString();
 
         }));
 
@@ -44,18 +52,25 @@ export class ControllerConfig implements TotoControllerConfig {
 
         }));
 
+        promises.push(secretManagerClient.accessSecretVersion({ name: `projects/${process.env.GCP_PID}/secrets/toto-auth-endpoint/versions/latest` }).then(([version]) => {
+
+            this.totoAuthEndpoint = version.payload!.data!.toString();
+
+        }));
+
+
         await Promise.all(promises);
 
     }
 
     getCustomAuthVerifier(): CustomAuthVerifier {
-
-        return new TotoAuthProvider("https://toto-ms-auth-6lv62poq7a-ew.a.run.app")
+        return new TotoAuthProvider(String(this.totoAuthEndpoint))
     }
 
     getProps(): ValidatorProps {
 
-        return {}
+        return {
+        }
     }
 
     async getMongoClient() {
@@ -64,8 +79,18 @@ export class ControllerConfig implements TotoControllerConfig {
 
         return await new MongoClient(mongoUrl).connect();
     }
+    
+    getExpectedAudience(): string {
+        
+        return String(this.expectedAudience)
+        
+    }
 
     getDBName() { return dbName }
     getCollections() { return collections }
 
+}
+
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

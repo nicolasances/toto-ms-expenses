@@ -40,12 +40,6 @@ export class TotoAPIController {
         this.logger = new Logger(apiName)
         this.config = config;
 
-        config.load().then(() => {
-
-            this.validator = new Validator(config.getProps(), this.logger, config.getCustomAuthVerifier());
-
-        });
-
         // Initialize the basic Express functionalities
         this.app.use(function (req, res, next) {
             res.header("Access-Control-Allow-Origin", "*");
@@ -66,6 +60,14 @@ export class TotoAPIController {
         this.staticContent = this.staticContent.bind(this);
         this.fileUploadPath = this.fileUploadPath.bind(this);
         this.path = this.path.bind(this);
+    }
+
+    async init() {
+
+        await this.config.load();
+
+        this.validator = new Validator(this.config, this.logger);
+
     }
 
     /**
@@ -197,7 +199,7 @@ export class TotoAPIController {
             const cid = String(req.headers['x-correlation-id']);
 
             try {
-                
+
                 // Log the fact that a call has been received
                 this.logger.apiIn(cid, method, path);
 

@@ -10,13 +10,15 @@ export class TotoAuthProvider implements CustomAuthVerifier {
         this.authAPIEndpoint = authAPIEndpoint;
     }
 
+    getAuthProvider(): string {
+        return "toto"
+    }
+
     async verifyIdToken(idToken: IdToken): Promise<AuthCheckResult> {
 
         console.log("Validating custom token");
 
         const result = await verifyToken(this.authAPIEndpoint, idToken.idToken, null)
-
-        console.log(result);
 
         if (!result || result.code == 400) throw result;
         if (result && result.name == 'JsonWebTokenError') throw {code: 400, message: result.message}
