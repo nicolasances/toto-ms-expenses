@@ -27,8 +27,13 @@ export class GetUnreviewedMonths implements TotoDelegate {
 
             const cursor = db.collection(config.getCollections().expenses).aggregate([
                 { $match: { user: userContext.email, consolidated: { $ne: true } } },
-                { $group: { _id: "$yearMonth" } },
-                { $project: { _id: 0, yearMonth: "$_id" } }
+                {
+                    $group: {
+                        _id: "$yearMonth",
+                        totalAmount: { $sum: "$amountInEuro" }
+                    }
+                },
+                { $project: { _id: 0, yearMonth: "$_id", totalAmount: 1 } }
             ])
 
             var yearMonths = [];
