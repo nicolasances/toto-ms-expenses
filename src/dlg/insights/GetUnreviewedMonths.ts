@@ -21,6 +21,8 @@ export class GetUnreviewedMonths implements TotoDelegate {
 
         const targetCurrency = req.query.targetCurrency ?? "EUR";
 
+        const currencyConvRate = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(String(targetCurrency));
+
         let client;
 
         try {
@@ -47,7 +49,7 @@ export class GetUnreviewedMonths implements TotoDelegate {
 
                 // Convert the currency, if not EUR
                 if (targetCurrency != "EUR") {
-                    yearMonth.totalAmount = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(String(targetCurrency));
+                    yearMonth.totalAmount = currencyConvRate.rate * yearMonth.totalAmount;
                 }
                 yearMonth.currency = targetCurrency;
 
