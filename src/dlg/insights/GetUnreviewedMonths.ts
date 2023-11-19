@@ -6,6 +6,7 @@ import { ControllerConfig } from "../../Config";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { CurrencyConversion } from "../../controller/util/GetExchangeRate";
+import moment from "moment-timezone";
 
 /**
  * This class retrieves the list of months that have not been reviewed. 
@@ -31,7 +32,7 @@ export class GetUnreviewedMonths implements TotoDelegate {
             const db = client.db(config.getDBName());
 
             const cursor = db.collection(config.getCollections().expenses).aggregate([
-                { $match: { user: userContext.email, consolidated: { $ne: true } } },
+                { $match: { user: userContext.email, consolidated: { $ne: true }, yearMonth: { $ne: moment().tz("Europe/Rome").format("YYYYMM") } } },
                 {
                     $group: {
                         _id: "$yearMonth",
