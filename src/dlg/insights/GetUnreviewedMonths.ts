@@ -5,6 +5,7 @@ import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { ControllerConfig } from "../../Config";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
+import { CurrencyConversion } from "../../controller/util/GetExchangeRate";
 
 /**
  * This class retrieves the list of months that have not been reviewed. 
@@ -17,6 +18,8 @@ export class GetUnreviewedMonths implements TotoDelegate {
         const config = execContext.config as ControllerConfig;
         const logger = execContext.logger;
         const cid = execContext.cid;
+
+        const targetCurrency = req.query.targetCurrency ?? "EUR";
 
         let client;
 
@@ -41,6 +44,11 @@ export class GetUnreviewedMonths implements TotoDelegate {
             while (await cursor.hasNext()) {
 
                 const yearMonth = await cursor.next() as any;
+
+                // Convert the currency, if not EUR
+                if (targetCurrency != "EUR") {
+                    yearMonth.totalAmount = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(String(targetCurrency));
+                }
 
                 yearMonths.push(yearMonth);
 
