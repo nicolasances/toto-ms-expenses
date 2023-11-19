@@ -38,7 +38,8 @@ export class GetUnreviewedMonths implements TotoDelegate {
                         totalAmount: { $sum: "$amountInEuro" }
                     }
                 },
-                { $project: { _id: 0, yearMonth: "$_id", totalAmount: 1 } }
+                { $project: { _id: 0, yearMonth: "$_id", totalAmount: 1 } },
+                { $sort: { yearMonth: -1 } }
             ])
 
             var yearMonths = [];
