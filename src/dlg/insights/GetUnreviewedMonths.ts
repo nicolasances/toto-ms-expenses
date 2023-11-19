@@ -49,6 +49,7 @@ export class GetUnreviewedMonths implements TotoDelegate {
                 if (targetCurrency != "EUR") {
                     yearMonth.totalAmount = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(String(targetCurrency));
                 }
+                yearMonth.currency = targetCurrency;
 
                 yearMonths.push(yearMonth);
 
