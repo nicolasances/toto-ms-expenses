@@ -31,7 +31,7 @@ export class GetUnreviewedMonths implements TotoDelegate {
             client = await config.getMongoClient();
             const db = client.db(config.getDBName());
 
-            const cursor = db.collection(config.getCollections().expenses).aggregate([
+            const query = [
                 { $match: { user: userContext.email, consolidated: { $ne: true }, yearMonth: { $ne: moment().tz("Europe/Rome").format("YYYYMM") } } },
                 {
                     $group: {
@@ -41,7 +41,12 @@ export class GetUnreviewedMonths implements TotoDelegate {
                 },
                 { $project: { _id: 0, yearMonth: "$_id", totalAmount: 1 } },
                 { $sort: { yearMonth: -1 } }
-            ])
+            ]
+
+            console.log(query);
+            
+
+            const cursor = db.collection(config.getCollections().expenses).aggregate(query)
 
             var yearMonths = [];
 
