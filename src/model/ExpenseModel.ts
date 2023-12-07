@@ -1,3 +1,4 @@
+import { CurrencyConversion } from "../controller/util/GetExchangeRate";
 
 export interface IExpense {
   id: string,
@@ -133,4 +134,39 @@ export class ExpenseModel {
 
     return { $pull: { tags: tagId } }
   }
+
+  /**
+   * Updates the expense with the provided data
+   */
+  updateExpense(data: any, exchangeRateToEUR: number) {
+
+
+    let upd = {} as any;
+
+    if (data.date) {
+      upd.date = parseInt(data.date);
+      upd.yearMonth = String(data.date).substring(0, 6);
+    }
+    if (data.category) upd.category = data.category;
+    if (data.description) upd.description = data.description;
+    if (data.yearMonth) upd.yearMonth = parseInt(data.yearMonth);
+    if (data.additionalData) upd.additionalData = data.additionalData;
+    if (data.consolidated != null) upd.consolidated = data.consolidated;
+    if (data.weekendId) upd.weekendId = data.weekendId;
+    if (data.clearWeekendId) upd.weekendId = null;
+    if (data.monthly != null) upd.monthly = data.monthly;
+
+    if (data.amount && data.currency) {
+      upd.amount = parseFloat(data.amount);
+      upd.currency = data.currency;
+
+      if (data.currency != 'EUR') upd.amountInEuro = exchangeRateToEUR * parseFloat(data.amount);
+      else upd.amountInEuro = parseFloat(data.amount);
+
+    }
+    
+    return { $set: upd }
+
+  }
+
 }
