@@ -15,6 +15,32 @@ export class CurrencyConversion {
     this.execContext = execContext;
   }
 
+  /**
+   * Converts the provided amount into EUR. 
+   * 
+   * If the provided amount is already in EUR, no conversion is made.
+   * 
+   * @param amount the amount to convert in EUR
+   * @param localCurrency the local currency used
+   */
+  async convertAmountToEUR(amount: number, localCurrency: string): Promise<number> {
+
+    // If the currency is already EUR, don't do anythin
+    if (localCurrency == "EUR") return amount;
+
+    // Get the exchange rate
+    const { rate } = await this.getExchangeRate(localCurrency);
+
+    // Apply the exchange rate and return the amount
+    return rate * amount;
+
+  }
+
+  /**
+   * Returns the exchange rate from the provided currency to EUR
+   * @param currency the currency that the expense is in
+   * @returns the conversion rate in EUR
+   */
   getExchangeRate(currency: string): Promise<Rate> {
 
     return new Promise(function (success, failure) {
