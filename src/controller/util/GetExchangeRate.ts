@@ -28,47 +28,15 @@ export class CurrencyConversion {
     // If the currency is already EUR, don't do anythin
     if (localCurrency == "EUR") return amount;
 
-    // Get the exchange rate
-    const { rate } = await this.getExchangeRate(localCurrency);
+    // Get the EUR exchange rate to the local currency
+    const eurToLocalRate = await this.getRateEURToTargetCurrency(localCurrency);
+
+    // Invert the rate
+    const rate = 1 / eurToLocalRate.rate
 
     // Apply the exchange rate and return the amount
-    return rate * amount;
+    return parseFloat((rate * amount).toFixed(2));
 
-  }
-
-  /**
-   * Returns the exchange rate from the provided currency to EUR
-   * @param currency the currency that the expense is in
-   * @returns the conversion rate in EUR
-   */
-  getExchangeRate(currency: string): Promise<Rate> {
-
-    return new Promise(function (success, failure) {
-
-      var data = {
-        url: `${exchangeRateUrl}/${currency}/EUR`,
-        headers: {
-          'User-Agent': 'node.js',
-          'Accept': 'application/json'
-        }
-      };
-
-      request.get(data, function (error, response, body) {
-
-        var rates = JSON.parse(body);
-
-        // Fallback: if I went over the quota
-        // TEMPORARY!!
-        // TO BE FIXED: cache every day the rate, since it only changes once a day
-        if (rates.error) {
-          if (currency == 'DKK') rates.rate = 0.13;
-        }
-
-        success({ rate: rates.rate });
-
-      });
-
-    });
   }
 
   getRateEURToTargetCurrency(targetCurrency: string): Promise<Rate> {

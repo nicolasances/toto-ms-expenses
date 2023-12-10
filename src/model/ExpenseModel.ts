@@ -138,7 +138,7 @@ export class ExpenseModel {
   /**
    * Updates the expense with the provided data
    */
-  updateExpense(data: any, exchangeRateToEUR: number) {
+  updateExpense(data: any, amountInEuro: number) {
 
 
     let upd = {} as any;
@@ -159,9 +159,7 @@ export class ExpenseModel {
     if (data.amount && data.currency) {
       upd.amount = parseFloat(data.amount);
       upd.currency = data.currency;
-
-      if (data.currency != 'EUR') upd.amountInEuro = exchangeRateToEUR * parseFloat(data.amount);
-      else upd.amountInEuro = parseFloat(data.amount);
+      upd.amountInEuro = amountInEuro;
 
     }
     

@@ -30,12 +30,10 @@ export class PutExpense implements TotoDelegate {
 
             // Get the exchange rate
             const currency = req.body.currency;
-            let rate = 1;
-
-            if (currency) rate = (await new CurrencyConversion(execContext).getExchangeRate(currency)).rate;
+            const amountInEuro = await new CurrencyConversion(execContext).convertAmountToEUR(req.body.amount, currency);
 
             // Update
-            await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(tid) }, new ExpenseModel().updateExpense(req.body, rate))
+            await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(tid) }, new ExpenseModel().updateExpense(req.body, amountInEuro))
 
         } catch (error) {
 
