@@ -14,6 +14,7 @@ import { GetTagExpenses } from "./dlg/tags/GetTagExpenses";
 import { GetTag } from "./dlg/tags/GetTag";
 import { GetUnreviewedMonths } from "./dlg/insights/GetUnreviewedMonths";
 import { PutExpense } from "./dlg/PutExpense";
+import { GetMonthTotal } from "./dlg/aggregates/GetMonthTotal";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -22,6 +23,7 @@ api.path("GET", "/expenses", new GetExpenses())
 api.path("POST", "/expenses/:id/tags", new TagExpense());
 api.path("PUT", "/expenses/:id", new PutExpense());
 api.path("DELETE", "/expenses/:id/tags/:tagId", new UntagExpense());
+api.path("GET", "/expenses/:yearMonth/total", new GetMonthTotal())
 
 api.path("POST", "/tags", new PostTag())
 api.path("GET", "/tags", new GetTags())

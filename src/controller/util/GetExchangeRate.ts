@@ -43,6 +43,11 @@ export class CurrencyConversion {
 
     return new Promise((success, failure) => {
 
+      if (targetCurrency == "EUR") {
+        success({ rate: 1 })
+        return;
+      }
+
       if (cache[targetCurrency.toUpperCase()]) {
         success({ rate: cache[targetCurrency.toUpperCase()] });
         return;
