@@ -1,4 +1,4 @@
-import { CurrencyConversion } from "../controller/util/GetExchangeRate";
+import { CurrencyConversion } from "../util/CurrencyConversion";
 
 export interface IExpense {
   id: string,

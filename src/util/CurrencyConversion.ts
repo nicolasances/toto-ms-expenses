@@ -1,6 +1,6 @@
 import request from 'request'
 import moment from 'moment-timezone'
-import { ExecutionContext } from '../model/ExecutionContext';
+import { ExecutionContext } from '../controller/model/ExecutionContext';
 
 // const exchangeRateUrl = 'https://v3.exchangerate-api.com/pair/125b58078cb8ba5b129942e9';
 const exchangeRateUrl = `https://api.freecurrencyapi.com/v1/latest?apikey=fca_live_PAePHCpsXFjLaxqzUqSTKMTSPnqoj2qpfg5ThuZ2`
@@ -26,7 +26,7 @@ export class CurrencyConversion {
   async convertAmountToEUR(amount: number, localCurrency: string): Promise<number> {
 
     // If the currency is already EUR, don't do anythin
-    if (localCurrency == "EUR") return amount;
+    if (localCurrency == null || localCurrency == "EUR") return amount;
 
     // Get the EUR exchange rate to the local currency
     const eurToLocalRate = await this.getRateEURToTargetCurrency(localCurrency);
@@ -43,7 +43,7 @@ export class CurrencyConversion {
 
     return new Promise((success, failure) => {
 
-      if (targetCurrency == "EUR") {
+      if (targetCurrency == null || targetCurrency == "EUR") {
         success({ rate: 1 })
         return;
       }

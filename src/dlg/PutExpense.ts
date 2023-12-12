@@ -6,7 +6,7 @@ import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
 import { ControllerConfig } from "../Config";
 import { ValidationError } from "../controller/validation/Validator";
 import { ObjectId } from "mongodb";
-import { CurrencyConversion } from "../controller/util/GetExchangeRate";
+import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExpenseModel } from "../model/ExpenseModel";
 
 

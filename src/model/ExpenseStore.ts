@@ -1,7 +1,7 @@
 import moment from "moment";
 import { Db } from "mongodb";
 import { ControllerConfig } from "../Config";
-import { CurrencyConversion } from "../controller/util/GetExchangeRate";
+import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
 
 export class ExpenseStore {

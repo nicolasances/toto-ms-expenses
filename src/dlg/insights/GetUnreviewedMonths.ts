@@ -5,7 +5,7 @@ import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { ControllerConfig } from "../../Config";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
-import { CurrencyConversion } from "../../controller/util/GetExchangeRate";
+import { CurrencyConversion } from "../../util/CurrencyConversion";
 import moment from "moment-timezone";
 
 /**
