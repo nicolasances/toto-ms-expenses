@@ -29,7 +29,7 @@ export class PutExpense implements TotoDelegate {
             const tid = req.params.id;
 
             // Get the exchange rate
-            const currency = req.body.currency;
+            const currency = req.body.currency ?? "EUR";
             const amountInEuro = await new CurrencyConversion(execContext).convertAmountToEUR(req.body.amount, currency);
 
             // Update
