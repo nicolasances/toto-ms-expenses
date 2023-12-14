@@ -10,6 +10,7 @@ const secretManagerClient = new SecretManagerServiceClient();
 const dbName = 'expenses';
 const collections = {
     expenses: 'expenses',
+    incomes: 'incomes', 
     settings: 'settings',
     cron: 'cron',
     tags: 'tags'
