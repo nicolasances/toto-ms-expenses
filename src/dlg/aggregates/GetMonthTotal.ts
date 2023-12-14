@@ -5,7 +5,7 @@ import { ExecutionContext } from "../../controller/model/ExecutionContext";
 import { ControllerConfig } from "../../Config";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
-import GetMonthTotalResult, { ExpenseStore } from "../../model/ExpenseStore";
+import { ExpenseStore, GetMonthTotalResult } from "../../model/ExpenseStore";
 
 
 export class GetMonthTotal implements TotoDelegate {

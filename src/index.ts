@@ -16,6 +16,7 @@ import { GetUnreviewedMonths } from "./dlg/insights/GetUnreviewedMonths";
 import { PutExpense } from "./dlg/PutExpense";
 import { GetMonthTotal } from "./dlg/aggregates/GetMonthTotal";
 import { PostIncome } from "./dlg/income/PostIncome";
+import { GetExpensesTotalPerMonth } from "./dlg/stats/GetExpensesTotalPerMonth";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -40,6 +41,8 @@ api.path("POST", "/backup", new StartBackup())
 
 api.path("POST", "/events", new EventHandlerHook())
 api.path("POST", "/events/tag", new EventHandlerHook())
+
+api.path('GET', '/stats/expensesPerMonth', new GetExpensesTotalPerMonth())
 
 api.init().then(() => {
     api.listen()
