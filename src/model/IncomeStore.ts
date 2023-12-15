@@ -44,10 +44,47 @@ export class IncomeStore {
 
     }
 
+    async getIncomes(filter?: GetIncomesFilter): Promise<TotoIncome[]> {
+
+        // Build the query filter
+        let queryFilter = {} as any
+
+        // Add the year month, if any
+        if (filter?.yearMonth) queryFilter.yearMonth = parseInt(filter.yearMonth)
+
+        // Fire the query
+        const incomes = await this.db.collection(this.config.getCollections().incomes).find(queryFilter).toArray()
+
+        const totoIncomes = []
+
+        // Convert to TotoIncome objects
+        for (let income of incomes) {
+
+            totoIncomes.push(TotoIncome.fromPO(income))
+        }
+
+        // Return result
+        return totoIncomes
+
+    }
+
 }
 
+/**
+ * This class can be used to filter incomes when reading them through getIncomes()
+ */
+export class GetIncomesFilter {
+
+    yearMonth?: string
+
+}
+
+/**
+ * This class represents the model of an Income
+ */
 export class TotoIncome {
 
+    id?: string
     amount: number
     currency: string
     rateToEur?: number
@@ -68,6 +105,24 @@ export class TotoIncome {
 
         // Calculate year month from date
         this.yearMonth = parseInt(moment(this.date, "YYYYMMDD").format("YYYYMM"))
+
+    }
+
+    /**
+     * Creates the TotoIncome based on a json object read from Mongo
+     * @param po the po as read from Mongo
+     */
+    static fromPO(po: any): TotoIncome {
+
+        let income = new TotoIncome(po.amount, po.date, po.description, po.currency, po.user)
+
+        income.id = po._id
+        income.rateToEur = po.rateToEur
+        income.amountInEuro = po.amountInEuro
+        income.yearMonth = po.yearMonth
+        income.consolidated = po.consolidated 
+        
+        return income
 
     }
 

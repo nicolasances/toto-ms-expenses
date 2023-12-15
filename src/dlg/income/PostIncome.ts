@@ -38,7 +38,7 @@ export class PostIncome implements TotoDelegate {
             const incomeStore = new IncomeStore(db, execContext);
 
             // Create the income
-            const income = new TotoIncome(body.amount, body.date, body.description, body.currency, user)
+            const income = new TotoIncome(parseFloat(body.amount), body.date, body.description, body.currency, user)
 
             // Save the income
             const incomeId = await incomeStore.saveIncome(income)
