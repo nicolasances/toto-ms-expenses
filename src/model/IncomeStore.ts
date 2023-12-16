@@ -1,5 +1,5 @@
 import moment from "moment";
-import { Db } from "mongodb";
+import { Db, ObjectId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
@@ -65,6 +65,24 @@ export class IncomeStore {
 
         // Return result
         return totoIncomes
+
+    }
+
+    /**
+     * Retrieves a specific income transaction
+     * 
+     * @param id the id of the income
+     */
+    async getIncome(id: string): Promise<TotoIncome | null> {
+
+        // Find the transaction
+        const result = await this.db.collection(this.config.getCollections().incomes).findOne({_id: new ObjectId(id)})
+
+        // Check if null
+        if (!result) return null
+
+        // Convert it and return it
+        return TotoIncome.fromPO(result)
 
     }
 

@@ -18,6 +18,7 @@ import { GetMonthTotal } from "./dlg/aggregates/GetMonthTotal";
 import { PostIncome } from "./dlg/income/PostIncome";
 import { GetExpensesTotalPerMonth } from "./dlg/stats/GetExpensesTotalPerMonth";
 import { GetIncomes } from "./dlg/income/GetIncomes";
+import { GetIncome } from "./dlg/income/GetIncome";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -30,6 +31,7 @@ api.path("GET", "/expenses/:yearMonth/total", new GetMonthTotal())
 
 api.path("POST", "/incomes", new PostIncome())
 api.path('GET', '/incomes', new GetIncomes())
+api.path('GET', '/incomes/:id', new GetIncome())
 
 api.path("POST", "/tags", new PostTag())
 api.path("GET", "/tags", new GetTags())
