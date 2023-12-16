@@ -108,6 +108,7 @@ export class IncomeStore {
 
             // If the currency is not EUR recalculate the amount in EUR based on the original rate
             if (tx.currency != "EUR") tx.amountInEuro = tx.amount * tx.rateToEur!;
+            else tx.amountInEuro = tx.amount
         }
 
         if (updates.date) {
