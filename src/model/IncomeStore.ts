@@ -76,7 +76,7 @@ export class IncomeStore {
     async getIncome(id: string): Promise<TotoIncome | null> {
 
         // Find the transaction
-        const result = await this.db.collection(this.config.getCollections().incomes).findOne({_id: new ObjectId(id)})
+        const result = await this.db.collection(this.config.getCollections().incomes).findOne({ _id: new ObjectId(id) })
 
         // Check if null
         if (!result) return null
@@ -86,6 +86,53 @@ export class IncomeStore {
 
     }
 
+    /**
+     * Updates the specified income transaction
+     * 
+     * @param id the id of the transaction to update
+     * @param updates an object with all the fields that need to be update
+     */
+    async updateIncome(id: string, updates: any): Promise<UpdateIncomeResult> {
+
+        // Load the transaction 
+        const result = await this.db.collection(this.config.getCollections().incomes).findOne({ _id: new ObjectId(id) })
+
+        // Convert it
+        const tx = TotoIncome.fromPO(result)
+
+        // Update the transaction
+        if (updates.amount != null) {
+
+            // Update the amount
+            tx.amount = updates.amount;
+
+            // If the currency is not EUR recalculate the amount in EUR based on the original rate
+            if (tx.currency != "EUR") tx.amountInEuro = tx.amount * tx.rateToEur!;
+        }
+
+        if (updates.date) {
+
+            // Update the date 
+            tx.date = updates.date
+
+            // Recalculate the year month
+            tx.yearMonth = parseInt(moment(tx.date, "YYYYMMDD").format("YYYYMM"))
+        }
+
+        if (updates.description) tx.description = updates.description
+        if (updates.consolidated != null) tx.consolidated = updates.consolidated
+
+        // Update the record
+        const updateResult = await this.db.collection(this.config.getCollections().incomes).updateOne({ _id: new ObjectId(id) }, { $set: tx })
+
+        return { modifiedCount: updateResult.modifiedCount }
+
+    }
+
+}
+
+export interface UpdateIncomeResult {
+    modifiedCount: number
 }
 
 /**
@@ -138,8 +185,8 @@ export class TotoIncome {
         income.rateToEur = po.rateToEur
         income.amountInEuro = po.amountInEuro
         income.yearMonth = po.yearMonth
-        income.consolidated = po.consolidated 
-        
+        income.consolidated = po.consolidated
+
         return income
 
     }
