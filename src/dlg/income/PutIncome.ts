@@ -29,7 +29,7 @@ export class PutIncome implements TotoDelegate {
             const incomeStore = new IncomeStore(db, execContext);
 
             // Update the income transaction
-            const updateResult = incomeStore.updateIncome(req.params.id, body);
+            const updateResult = await incomeStore.updateIncome(req.params.id, body);
 
             // Return the created Id
             return updateResult
