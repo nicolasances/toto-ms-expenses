@@ -104,7 +104,7 @@ export class IncomeStore {
         if (updates.amount != null) {
 
             // Update the amount
-            tx.amount = updates.amount;
+            tx.amount = parseFloat(updates.amount);
 
             // If the currency is not EUR recalculate the amount in EUR based on the original rate
             if (tx.currency != "EUR") tx.amountInEuro = tx.amount * tx.rateToEur!;
