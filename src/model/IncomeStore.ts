@@ -3,6 +3,7 @@ import { Db, ObjectId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
+import { MonthTotal, MonthsTotals } from "./ExpenseStore";
 
 export class IncomeStore {
 
@@ -127,6 +128,55 @@ export class IncomeStore {
         const updateResult = await this.db.collection(this.config.getCollections().incomes).updateOne({ _id: new ObjectId(id) }, { $set: tx })
 
         return { modifiedCount: updateResult.modifiedCount }
+
+    }
+
+    /**
+     * Calculates the total amount of incomes for every month starting at yearMonthGte and ending today
+     * 
+     * @param user the user email
+     * @param yearMonthGte the yearMonth that delimits the start of the interval to consider. 
+     */
+    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string): Promise<MonthsTotals> {
+
+        // Get the exchange rate from EUR to Target Currency
+        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+
+        // Prepare the filter
+        let filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+
+        // Prepare the grouping
+        let groupByYearmonth = { $group: { _id: { yearMonth: '$yearMonth', currency: '$currency' }, amount: { $sum: '$amount' } } }
+
+        // Sorting
+        let sort = { $sort: { "_id.yearMonth": 1 } };
+
+        // Prepare the aggregate
+        let aggregate = [filter, groupByYearmonth, sort]
+
+        // Fire the query
+        const cursor = this.db.collection(this.config.getCollections().incomes).aggregate(aggregate);
+
+        // Output: array of months and their totals
+        const monthsTotal = new MonthsTotals(yearMonthGte)
+
+        while (await cursor.hasNext()) {
+
+            // Get the item
+            const item = await cursor.next() as any;
+
+            let amount = item.amount;
+
+            // Calculate the total, by converting to local currency, if needed
+            if (item._id.currency != targetCurrency) amount = item.amount * rate
+
+            // Add a MonthTotal, converting the amount to the target currency
+            monthsTotal.addMonthTotal(new MonthTotal(item._id.yearMonth, amount))
+
+        }
+
+        // Return the final list
+        return monthsTotal
 
     }
 
