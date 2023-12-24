@@ -1,6 +1,6 @@
 import request from 'request'
 import moment from 'moment-timezone'
-import { ExecutionContext } from '../model/ExecutionContext';
+import { ExecutionContext } from '../controller/model/ExecutionContext';
 
 // const exchangeRateUrl = 'https://v3.exchangerate-api.com/pair/125b58078cb8ba5b129942e9';
 const exchangeRateUrl = `https://api.freecurrencyapi.com/v1/latest?apikey=fca_live_PAePHCpsXFjLaxqzUqSTKMTSPnqoj2qpfg5ThuZ2`
@@ -15,39 +15,38 @@ export class CurrencyConversion {
     this.execContext = execContext;
   }
 
-  getExchangeRate(currency: string): Promise<Rate> {
+  /**
+   * Converts the provided amount into EUR. 
+   * 
+   * If the provided amount is already in EUR, no conversion is made.
+   * 
+   * @param amount the amount to convert in EUR
+   * @param localCurrency the local currency used
+   */
+  async convertAmountToEUR(amount: number, localCurrency: string): Promise<number> {
 
-    return new Promise(function (success, failure) {
+    // If the currency is already EUR, don't do anythin
+    if (localCurrency == null || localCurrency == "EUR") return amount;
 
-      var data = {
-        url: `${exchangeRateUrl}/${currency}/EUR`,
-        headers: {
-          'User-Agent': 'node.js',
-          'Accept': 'application/json'
-        }
-      };
+    // Get the EUR exchange rate to the local currency
+    const eurToLocalRate = await this.getRateEURToTargetCurrency(localCurrency);
 
-      request.get(data, function (error, response, body) {
+    // Invert the rate
+    const rate = 1 / eurToLocalRate.rate
 
-        var rates = JSON.parse(body);
+    // Apply the exchange rate and return the amount
+    return parseFloat((rate * amount).toFixed(2));
 
-        // Fallback: if I went over the quota
-        // TEMPORARY!!
-        // TO BE FIXED: cache every day the rate, since it only changes once a day
-        if (rates.error) {
-          if (currency == 'DKK') rates.rate = 0.13;
-        }
-
-        success({ rate: rates.rate });
-
-      });
-
-    });
   }
 
   getRateEURToTargetCurrency(targetCurrency: string): Promise<Rate> {
 
     return new Promise((success, failure) => {
+
+      if (targetCurrency == null || targetCurrency == "EUR") {
+        success({ rate: 1 })
+        return;
+      }
 
       if (cache[targetCurrency.toUpperCase()]) {
         success({ rate: cache[targetCurrency.toUpperCase()] });

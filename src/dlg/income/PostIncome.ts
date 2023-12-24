@@ -1,14 +1,14 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
-import { UserContext } from "../controller/model/UserContext";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
-import { ValidationError } from "../controller/validation/Validator";
-import { ControllerConfig } from "../Config";
-import { ExpenseStore, TotoExpense } from "../model/ExpenseStore";
+import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { UserContext } from "../../controller/model/UserContext";
+import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { ControllerConfig } from "../../Config";
+import { ValidationError } from "../../controller/validation/Validator";
+import { IncomeStore, TotoIncome } from "../../model/IncomeStore";
+import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 
 
-export class PostExpense implements TotoDelegate {
+export class PostIncome implements TotoDelegate {
 
     async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
 
@@ -35,16 +35,16 @@ export class PostExpense implements TotoDelegate {
             const db = client.db(config.getDBName());
 
             // Create the store
-            const expenseStore = new ExpenseStore(db, execContext);
+            const incomeStore = new IncomeStore(db, execContext);
 
-            // Create the expense
-            const expense = new TotoExpense(body.amount, body.date, body.description, body.currency, user, body.category, body.monthly)
+            // Create the income
+            const income = new TotoIncome(parseFloat(body.amount), body.date, body.description, body.currency, user)
 
-            // Save the expense
-            const expenseId = await expenseStore.createExpense(expense)
+            // Save the income
+            const incomeId = await incomeStore.saveIncome(income)
 
             // Return the created Id
-            return { id: expenseId }
+            return { id: incomeId }
 
 
         } catch (error) {

@@ -1,6 +1,6 @@
 
 import { ObjectId } from "mongodb";
-import { CurrencyConversion } from "../controller/util/GetExchangeRate";
+import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
 
 export interface ITag {
