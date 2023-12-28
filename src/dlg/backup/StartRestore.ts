@@ -62,7 +62,7 @@ export class StartRestore implements TotoDelegate {
 
             logger.compute(cid, `Database Restore completed`)
 
-            return { backup: "done", date: date }
+            return { restore: "done", date: date }
 
         } catch (error) {
 
