@@ -45,12 +45,14 @@ export class StartBackup implements TotoDelegate {
                 // Define the name of the file, as the current date (YYYYMMDD) followed by the name of the collection
                 const filename = `${today.format("YYYYMMDD")}-${collection}.json`;
 
+                fs.writeFileSync(filename, "");
+
                 // Write line by line
                 while (await cursor.hasNext()) {
 
                     const doc = await cursor.next();
 
-                    fs.appendFileSync(filename, JSON.stringify(doc));
+                    fs.appendFileSync(filename, `${JSON.stringify(doc)}\n`);
 
                 }
 

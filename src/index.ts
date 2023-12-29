@@ -21,6 +21,7 @@ import { GetIncomes } from "./dlg/income/GetIncomes";
 import { GetIncome } from "./dlg/income/GetIncome";
 import { PutIncome } from "./dlg/income/PutIncome";
 import { GetIncomesTotalPerMonth } from "./dlg/stats/GetIncomesTotalPerMonth";
+import { StartRestore } from "./dlg/backup/StartRestore";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -45,6 +46,7 @@ api.path("GET", "/tags/:id/expenses", new GetTagExpenses());
 api.path('GET', '/insights/unconsolidated', new GetUnreviewedMonths());
 
 api.path("POST", "/backup", new StartBackup())
+api.path("POST", "/restore", new StartRestore())
 
 api.path("POST", "/events", new EventHandlerHook())
 api.path("POST", "/events/tag", new EventHandlerHook())
