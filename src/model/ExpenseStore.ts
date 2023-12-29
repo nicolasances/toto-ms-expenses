@@ -1,5 +1,5 @@
 import moment from "moment";
-import { Db } from "mongodb";
+import { Db, ObjectId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
@@ -119,10 +119,24 @@ export class ExpenseStore {
         return monthsTotal
 
     }
+
+    /**
+     * Retrieves the specified expense
+     * 
+     * @param expenseId the expense Id
+     */
+    async getExpense(expenseId: string): Promise<TotoExpense> {
+
+        const expense = await this.db.collection(this.config.getCollections().expenses).findOne({ _id: new ObjectId(expenseId) }) as any as TotoExpense
+
+        return expense;
+
+    }
 }
 
 export class TotoExpense {
 
+    id?: string
     amount: number
     amountInEuro?: number
     category: Categories = Categories.VARIE

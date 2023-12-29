@@ -9,7 +9,7 @@ import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { Bucket, Storage } from "@google-cloud/storage";
 import { correlationId } from '../../controller/util/CorrelationId';
 import * as readline from 'readline';
-import { Db } from 'mongodb';
+import { Db, ObjectId } from 'mongodb';
 
 const storage = new Storage();
 
@@ -145,6 +145,7 @@ async function restoreCollection(db: Db, bucket: Bucket, collection: string, dat
     for await (const line of rl) {
 
         const doc = JSON.parse(line);
+        doc._id = new ObjectId(doc._id)
 
         batch.push(doc);
 
