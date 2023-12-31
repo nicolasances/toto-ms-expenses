@@ -1,5 +1,5 @@
 import moment from "moment";
-import { Db, ObjectId } from "mongodb";
+import { Db, Document, ObjectId, WithId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
@@ -125,11 +125,11 @@ export class ExpenseStore {
      * 
      * @param expenseId the expense Id
      */
-    async getExpense(expenseId: string): Promise<TotoExpense> {
+    async getExpense(expenseId: string): Promise<TotoExpense | null> {
 
-        const expense = await this.db.collection(this.config.getCollections().expenses).findOne({ _id: new ObjectId(expenseId) }) as any as TotoExpense
+        const expense = await this.db.collection(this.config.getCollections().expenses).findOne({ _id: new ObjectId(expenseId) })
 
-        return expense;
+        return TotoExpense.fromPO(expense)
 
     }
 }
@@ -165,6 +165,19 @@ export class TotoExpense {
 
         // Other optional fields
         if (monthly) this.monthly = monthly
+
+    }
+
+    static fromPO(po: WithId<Document> | null) {
+
+        if (po == null) return null;
+
+        const expense = new TotoExpense(po.amount, String(po.date), po.description, po.currency, po.user, po.category, po.monthly); 
+        expense.id = po._id.toHexString();
+        expense.amountInEuro = po.amountInEuro;
+        expense.tags = po.tags;
+
+        return expense
 
     }
 
