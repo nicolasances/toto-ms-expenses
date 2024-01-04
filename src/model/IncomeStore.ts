@@ -48,7 +48,7 @@ export class IncomeStore {
     async getIncomes(filter?: GetIncomesFilter): Promise<TotoIncome[]> {
 
         // Build the query filter
-        let queryFilter = {} as any
+        let queryFilter = { user: filter?.user } as any
 
         // Add the year month, if any
         if (filter?.yearMonth) queryFilter.yearMonth = parseInt(filter.yearMonth)
@@ -191,7 +191,12 @@ export interface UpdateIncomeResult {
  */
 export class GetIncomesFilter {
 
+    user: string
     yearMonth?: string
+
+    constructor(user: string) {
+        this.user = user
+    }
 
 }
 
