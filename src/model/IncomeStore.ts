@@ -123,6 +123,7 @@ export class IncomeStore {
 
         if (updates.description) tx.description = updates.description
         if (updates.consolidated != null) tx.consolidated = updates.consolidated
+        if (updates.category) tx.category = updates.category
 
         // Update the record
         const updateResult = await this.db.collection(this.config.getCollections().incomes).updateOne({ _id: new ObjectId(id) }, { $set: tx })
