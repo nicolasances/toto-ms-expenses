@@ -22,6 +22,7 @@ export class PostIncome implements TotoDelegate {
         if (!body.date) throw new ValidationError(400, "No date provided")
         if (!body.description) throw new ValidationError(400, "No description provided")
         if (!body.currency) throw new ValidationError(400, "No currency provided")
+        if (!body.category) throw new ValidationError(400, "Missing category")
 
         // Extract user
         const user = userContext.email;
@@ -38,7 +39,7 @@ export class PostIncome implements TotoDelegate {
             const incomeStore = new IncomeStore(db, execContext);
 
             // Create the income
-            const income = new TotoIncome(parseFloat(body.amount), body.date, body.description, body.currency, user)
+            const income = new TotoIncome(parseFloat(body.amount), body.date, body.description, body.currency, user, body.category)
 
             // Save the income
             const incomeId = await incomeStore.saveIncome(income)

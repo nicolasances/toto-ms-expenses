@@ -208,6 +208,7 @@ export class TotoIncome {
     id?: string
     amount: number
     currency: string
+    category: string = "VARIE"
     rateToEur?: number
     amountInEuro?: number
     date: string
@@ -216,13 +217,14 @@ export class TotoIncome {
     consolidated: boolean = false
     user: string
 
-    constructor(amount: number, date: string, description: string, currency: string, user: string) {
+    constructor(amount: number, date: string, description: string, currency: string, user: string, category: string) {
 
         this.amount = amount
         this.date = date
         this.description = description
         this.currency = currency
         this.user = user
+        this.category = category
 
         // Calculate year month from date
         this.yearMonth = parseInt(moment(this.date, "YYYYMMDD").format("YYYYMM"))
@@ -235,7 +237,10 @@ export class TotoIncome {
      */
     static fromPO(po: any): TotoIncome {
 
-        let income = new TotoIncome(po.amount, po.date, po.description, po.currency, po.user)
+        let category = po.category
+        if (!category) category = "VARIE"
+
+        let income = new TotoIncome(po.amount, po.date, po.description, po.currency, po.user, category)
 
         income.id = po._id
         income.rateToEur = po.rateToEur
