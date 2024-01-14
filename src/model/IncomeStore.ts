@@ -48,7 +48,7 @@ export class IncomeStore {
     async getIncomes(filter?: GetIncomesFilter): Promise<TotoIncome[]> {
 
         // Build the query filter
-        let queryFilter = {} as any
+        let queryFilter = { user: filter?.user } as any
 
         // Add the year month, if any
         if (filter?.yearMonth) queryFilter.yearMonth = parseInt(filter.yearMonth)
@@ -123,6 +123,7 @@ export class IncomeStore {
 
         if (updates.description) tx.description = updates.description
         if (updates.consolidated != null) tx.consolidated = updates.consolidated
+        if (updates.category) tx.category = updates.category
 
         // Update the record
         const updateResult = await this.db.collection(this.config.getCollections().incomes).updateOne({ _id: new ObjectId(id) }, { $set: tx })
@@ -191,7 +192,12 @@ export interface UpdateIncomeResult {
  */
 export class GetIncomesFilter {
 
+    user: string
     yearMonth?: string
+
+    constructor(user: string) {
+        this.user = user
+    }
 
 }
 
@@ -203,6 +209,7 @@ export class TotoIncome {
     id?: string
     amount: number
     currency: string
+    category: string = "VARIE"
     rateToEur?: number
     amountInEuro?: number
     date: string
@@ -211,13 +218,14 @@ export class TotoIncome {
     consolidated: boolean = false
     user: string
 
-    constructor(amount: number, date: string, description: string, currency: string, user: string) {
+    constructor(amount: number, date: string, description: string, currency: string, user: string, category: string) {
 
         this.amount = amount
         this.date = date
         this.description = description
         this.currency = currency
         this.user = user
+        this.category = category
 
         // Calculate year month from date
         this.yearMonth = parseInt(moment(this.date, "YYYYMMDD").format("YYYYMM"))
@@ -230,7 +238,10 @@ export class TotoIncome {
      */
     static fromPO(po: any): TotoIncome {
 
-        let income = new TotoIncome(po.amount, po.date, po.description, po.currency, po.user)
+        let category = po.category
+        if (!category) category = "VARIE"
+
+        let income = new TotoIncome(po.amount, po.date, po.description, po.currency, po.user, category)
 
         income.id = po._id
         income.rateToEur = po.rateToEur
