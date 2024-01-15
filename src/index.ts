@@ -23,6 +23,8 @@ import { PutIncome } from "./dlg/income/PutIncome";
 import { GetIncomesTotalPerMonth } from "./dlg/stats/GetIncomesTotalPerMonth";
 import { StartRestore } from "./dlg/backup/StartRestore";
 import { GetExpense } from "./dlg/GetExpense";
+import { GetSettings } from "./dlg/settings/GetSettings";
+import { PutSettings } from "./dlg/settings/PutSettings";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
@@ -55,6 +57,9 @@ api.path("POST", "/events/tag", new EventHandlerHook())
 
 api.path('GET', '/stats/expensesPerMonth', new GetExpensesTotalPerMonth())
 api.path('GET', '/stats/incomesPerMonth', new GetIncomesTotalPerMonth())
+
+api.path('GET', '/settings', new GetSettings())
+api.path('PUT', '/settings', new PutSettings())
 
 api.init().then(() => {
     api.listen()
