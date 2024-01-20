@@ -145,7 +145,7 @@ export class ExpenseStore {
         const sort = { $sort: { year: 1 } }
 
         // Aggregate
-        const aggregate = [filter, groupByYearCurrency, project, sort] 
+        const aggregate = [filter, groupByYearCurrency, project, sort]
 
         // Fire the query
         const cursor = this.db.collection(this.config.getCollections().expenses).aggregate(aggregate);
@@ -336,6 +336,18 @@ export class MonthsTotals {
         }
 
         if (!found) this.months.push(monthTotal)
+    }
+
+    find(year: string, month: string): MonthTotal | null {
+
+        for (const monthTotal of this.months) {
+
+            if (monthTotal.yearMonth == `${year}${month}`) return monthTotal
+
+        }
+
+        return null
+
     }
 
 }
