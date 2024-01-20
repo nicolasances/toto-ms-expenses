@@ -3,7 +3,7 @@ import { Db, ObjectId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { MonthTotal, MonthsTotals } from "./ExpenseStore";
+import { MonthTotal, MonthsTotals, YearTotal, YearsTotals } from "./ExpenseStore";
 
 export class IncomeStore {
 
@@ -178,6 +178,60 @@ export class IncomeStore {
 
         // Return the final list
         return monthsTotal
+
+    }
+
+    /**
+     * Calculates the total incomes for every year starting at yearMonthGte and ending this year (included)
+     * 
+     * @param user the user to use to filter
+     * @param yearMonthGte the start date to consider 
+     * @param targetCurrency the target currency
+     */
+    async getTotalsPerYear(user: string, yearMonthGte: number, targetCurrency: string): Promise<YearsTotals> {
+
+        // Get the exchange rate from EUR to Target Currency
+        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+
+        // Prepare the filter
+        const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+
+        // Prepare the grouping by year and currency
+        const groupByYearCurrency = { $group: { _id: { year: { $substr: ["$yearMonth", 0, 4] }, currency: '$currency' }, totalAmount: { $sum: '$amount' } } }
+
+        // Project 
+        const project = { $project: { _id: 0, currency: "$_id.currency", year: "$_id.year", totalAmount: "$totalAmount" } }
+
+        // Sort
+        const sort = { $sort: { year: 1 } }
+
+        // Aggregate
+        const aggregate = [filter, groupByYearCurrency, project, sort]
+
+        // Fire the query
+        const cursor = this.db.collection(this.config.getCollections().incomes).aggregate(aggregate);
+
+        // Output: array of months and their totals
+        const yearsTotals = new YearsTotals(yearMonthGte)
+
+        while (await cursor.hasNext()) {
+
+            // Get the item
+            const item = await cursor.next() as any;
+
+            let amount = item.totalAmount;
+
+            // Calculate the total, by converting to local currency, if needed
+            if (item.currency != targetCurrency) amount = item.totalAmount * rate
+
+            // Add a YearTotal, converting the amount to the target currency
+            yearsTotals.addYearTotal(new YearTotal(item.year, amount))
+
+        }
+
+
+        // Return the final list
+        return yearsTotals
 
     }
 
