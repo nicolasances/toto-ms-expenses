@@ -7,7 +7,7 @@ import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { IncomeStore } from "../../model/IncomeStore";
 import { ExpenseStore, MonthsTotals, YearsTotals } from "../../model/ExpenseStore";
-import { log } from "console";
+import moment from "moment-timezone";
 
 export class GetSavingsPerMonth implements TotoDelegate {
 
@@ -29,15 +29,16 @@ export class GetSavingsPerMonth implements TotoDelegate {
 
       // Find out where to start (yearMonth)
       let yearMonthGte = req.query.yearMonthGte == null ? 190001 : parseInt(String(req.query.yearMonthGte));
+      let yearMonthLte = req.query.yearMonthLte == null ? parseInt(moment().tz("Europe/Rome").format("YYYYMM")) : parseInt(String(req.query.yearMonthLte));
 
       // Get the target currency 
       const targetCurrency = req.query.currency ?? "EUR"
 
       // 1. Get the total expenses of each month
-      const expensesPerMonth = await new ExpenseStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency))
+      const expensesPerMonth = await new ExpenseStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
 
       // 2. Get the total incomes of each month
-      const incomesPerMonth = await new IncomeStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency))
+      const incomesPerMonth = await new IncomeStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
 
       // 3. Calculate the savings of each year
       return new SavingsPerMonth(expensesPerMonth, incomesPerMonth)
@@ -93,17 +94,17 @@ class SavingsPerMonth {
 
       // If there are no incomes at all (for some reason), the saving is the negative expenses
       if (incomesPerMonth == null) {
-        
+
         this.savings.push(new MonthSaving(year, month, saving))
-        
+
         continue;
-        
+
       }
-      
+
       // Find the expenses of the year
       let incomeMonth = incomesPerMonth.find(year, month)
       let income = (incomeMonth && incomeMonth.amount) ? incomeMonth.amount : 0
-      
+
       // Calculate savings
       saving += income
 

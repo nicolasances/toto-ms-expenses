@@ -77,13 +77,13 @@ export class ExpenseStore {
      * @param user the user email
      * @param yearMonthGte the yearMonth that delimits the start of the interval to consider. 
      */
-    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string): Promise<MonthsTotals> {
+    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number): Promise<MonthsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
         const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
-        let filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+        let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } };
 
         // Prepare the grouping
         let groupByYearmonth = { $group: { _id: { yearMonth: '$yearMonth', currency: '$currency' }, amount: { $sum: '$amount' } } }

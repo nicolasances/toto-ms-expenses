@@ -6,6 +6,7 @@ import { ControllerConfig } from "../../Config";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { IncomeStore } from "../../model/IncomeStore";
+import moment from "moment-timezone";
 
 export class GetIncomesTotalPerMonth implements TotoDelegate {
 
@@ -27,6 +28,7 @@ export class GetIncomesTotalPerMonth implements TotoDelegate {
 
       // Find out where to start (yearMonth)
       let yearMonthGte = req.query.yearMonthGte == null ? 190001 : parseInt(String(req.query.yearMonthGte));
+      let yearMonthLte = req.query.yearMonthLte == null ? parseInt(moment().tz("Europe/Rome").format("YYYYMM")) : parseInt(String(req.query.yearMonthLte));
 
       // Get the target currency 
       const targetCurrency = req.query.currency ?? "EUR"
@@ -35,7 +37,7 @@ export class GetIncomesTotalPerMonth implements TotoDelegate {
       const store = new IncomeStore(db, execContext);
 
       // Retrieve the statistics from the store
-      const months = await store.getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency));
+      const months = await store.getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte);
 
       return { months: months }
 
