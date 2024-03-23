@@ -77,13 +77,13 @@ export class ExpenseStore {
      * @param user the user email
      * @param yearMonthGte the yearMonth that delimits the start of the interval to consider. 
      */
-    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string): Promise<MonthsTotals> {
+    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number): Promise<MonthsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
         const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
-        let filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+        let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } };
 
         // Prepare the grouping
         let groupByYearmonth = { $group: { _id: { yearMonth: '$yearMonth', currency: '$currency' }, amount: { $sum: '$amount' } } }
@@ -117,6 +117,59 @@ export class ExpenseStore {
 
         // Return the final list
         return monthsTotal
+
+    }
+
+    /**
+     * Calculates the total amount of expenses for every year starting at yearMonthGte and ending this year (included)
+     * 
+     * @param user the user to use to filter
+     * @param yearMonthGte the start date to consider 
+     * @param targetCurrency the target currency
+     */
+    async getTotalsPerYear(user: string, yearMonthGte: number, targetCurrency: string): Promise<YearsTotals> {
+
+        // Get the exchange rate from EUR to Target Currency
+        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+
+        // Prepare the filter
+        const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+
+        // Prepare the grouping by year and currency
+        const groupByYearCurrency = { $group: { _id: { year: { $substr: ["$yearMonth", 0, 4] }, currency: '$currency' }, totalAmount: { $sum: '$amount' } } }
+
+        // Project 
+        const project = { $project: { _id: 0, currency: "$_id.currency", year: "$_id.year", totalAmount: "$totalAmount" } }
+
+        // Sort
+        const sort = { $sort: { year: 1 } }
+
+        // Aggregate
+        const aggregate = [filter, groupByYearCurrency, project, sort]
+
+        // Fire the query
+        const cursor = this.db.collection(this.config.getCollections().expenses).aggregate(aggregate);
+
+        // Output: array of months and their totals
+        const yearsTotals = new YearsTotals(yearMonthGte)
+
+        while (await cursor.hasNext()) {
+
+            // Get the item
+            const item = await cursor.next() as any;
+
+            let amount = item.totalAmount;
+
+            // Calculate the total, by converting to local currency, if needed
+            if (item.currency != targetCurrency) amount = item.totalAmount * rate
+
+            // Add a YearTotal, converting the amount to the target currency
+            yearsTotals.addYearTotal(new YearTotal(item.year, amount))
+
+        }
+
+        // Return the final list
+        return yearsTotals
 
     }
 
@@ -172,7 +225,7 @@ export class TotoExpense {
 
         if (po == null) return null;
 
-        const expense = new TotoExpense(po.amount, String(po.date), po.description, po.currency, po.user, po.category, po.monthly); 
+        const expense = new TotoExpense(po.amount, String(po.date), po.description, po.currency, po.user, po.category, po.monthly);
         expense.id = po._id.toHexString();
         expense.amountInEuro = po.amountInEuro;
         expense.tags = po.tags;
@@ -283,6 +336,92 @@ export class MonthsTotals {
         }
 
         if (!found) this.months.push(monthTotal)
+    }
+
+    find(year: string, month: string): MonthTotal | null {
+
+        for (const monthTotal of this.months) {
+
+            if (monthTotal.yearMonth == `${year}${month}`) return monthTotal
+
+        }
+
+        return null
+
+    }
+
+}
+
+/**
+ * Interface used to represent the total amount of expenses in a year
+ */
+export class YearTotal {
+    year: string
+    amount: number
+
+    constructor(year: string, amount: number) {
+        this.year = year
+        this.amount = amount
+    }
+
+    /**
+     * Adds the specified amount to this year's total
+     * 
+     * This will be used when a year is composed of expenses in different currencies
+     * 
+     * @param amount amount to add to this month total
+     */
+    addAmount(amount: number) {
+        this.amount += amount
+    }
+}
+
+/**
+ * Interface used to represent the total amount of expenses for each month
+ * in a given period represented by the interface [yearMonthGte, today]
+ */
+export class YearsTotals {
+    years: YearTotal[] = []
+    yearMonthGte: number
+
+    constructor(yearMonthGte: number) {
+        this.yearMonthGte = yearMonthGte
+    }
+
+    /**
+     * Add this year's total to the accumulated list of years' totals
+     * 
+     * Note that if a YearTotal with same year  has already been added, 
+     * this method will just add the amount to the existing YearTotal
+     * 
+     * @param yearTotal the year total to add
+     */
+    addYearTotal(yearTotal: YearTotal) {
+
+        // If the year is already present, just add the amount to it
+        let found = false;
+
+        for (const year of this.years) {
+
+            if (year.year == yearTotal.year) {
+                year.addAmount(yearTotal.amount)
+                found = true
+            }
+
+        }
+
+        if (!found) this.years.push(yearTotal)
+    }
+
+    findYearTotal(year: string): YearTotal | null {
+
+        for (const yearTotal of this.years) {
+
+            if (yearTotal.year == year) return yearTotal
+
+        }
+
+        return null
     }
 
 }

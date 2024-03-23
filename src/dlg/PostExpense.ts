@@ -17,10 +17,13 @@ export class PostExpense implements TotoDelegate {
         const cid = execContext.cid;
         const config = execContext.config as ControllerConfig;
 
+        // Putting a default description
+        let description = body.description
+        if (!description) description = "Unknown"
+
         // Validate mandatory fields
         if (!body.amount) throw new ValidationError(400, "No amount provided")
         if (!body.date) throw new ValidationError(400, "No date provided")
-        if (!body.description) throw new ValidationError(400, "No description provided")
         if (!body.currency) throw new ValidationError(400, "No currency provided")
 
         // Extract user
@@ -38,7 +41,7 @@ export class PostExpense implements TotoDelegate {
             const expenseStore = new ExpenseStore(db, execContext);
 
             // Create the expense
-            const expense = new TotoExpense(body.amount, body.date, body.description, body.currency, user, body.category, body.monthly)
+            const expense = new TotoExpense(body.amount, body.date, description, body.currency, user, body.category, body.monthly)
 
             // Save the expense
             const expenseId = await expenseStore.createExpense(expense)
