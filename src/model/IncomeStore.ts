@@ -52,9 +52,13 @@ export class IncomeStore {
 
         // Add the year month, if any
         if (filter?.yearMonth) queryFilter.yearMonth = parseInt(filter.yearMonth)
+        if (filter?.category) queryFilter.category = filter.category;
+
+        let sort = {}
+        if (filter?.last) sort = { date: -1 }
 
         // Fire the query
-        const incomes = await this.db.collection(this.config.getCollections().incomes).find(queryFilter).toArray()
+        const incomes = await this.db.collection(this.config.getCollections().incomes).find(queryFilter).sort(sort).limit(filter?.last ?? 0).toArray()
 
         const totoIncomes = []
 
@@ -248,6 +252,8 @@ export class GetIncomesFilter {
 
     user: string
     yearMonth?: string
+    last?: number
+    category?: string
 
     constructor(user: string) {
         this.user = user

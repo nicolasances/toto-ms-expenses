@@ -37,6 +37,8 @@ export class GetIncomes implements TotoDelegate {
       const filter = new GetIncomesFilter(user)
 
       filter.yearMonth = req.query.yearMonth ? String(req.query.yearMonth) : undefined;
+      filter.last = req.query.last ? parseInt(String(req.query.last)) : undefined;
+      filter.category = req.query.category ? String(req.query.category) : undefined;
 
       // Get the incomes
       const incomes = await store.getIncomes(filter)
