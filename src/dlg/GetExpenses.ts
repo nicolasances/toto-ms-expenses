@@ -41,9 +41,6 @@ export class GetExpenses implements TotoDelegate {
 
     logger.compute(cid, `Retrieving expenses with filter ${JSON.stringify(filter)}`, "info");
 
-    // Validation
-    if (!filter.user) throw new ValidationError(400, "Missing user field")
-
     if (filter.maxResults == null) filter.maxResults = 0;
 
     let client;
