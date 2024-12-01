@@ -33,6 +33,9 @@ export class GetExpenses implements TotoDelegate {
     const filter = req.query as Filter;
     const sort = req.query;
 
+    console.log(filter);
+    
+
     const logger = execContext.logger;
     const cid = execContext.cid;
     const config = execContext.config as ControllerConfig;
@@ -40,6 +43,9 @@ export class GetExpenses implements TotoDelegate {
     const model = new ExpenseModel()
 
     logger.compute(cid, `Retrieving expenses with filter ${JSON.stringify(filter)}`, "info");
+
+    // Validation
+    if (!filter.user) throw new ValidationError(400, "Missing user field")
 
     if (filter.maxResults == null) filter.maxResults = 0;
 
@@ -51,7 +57,7 @@ export class GetExpenses implements TotoDelegate {
       const db = client.db(config.getDBName());
 
       const cursor = db.collection(config.getCollections().expenses)
-        .find(model.filterExpenses(filter), { limit: filter.maxResults })
+        .find(model.filterExpenses(filter), { limit: parseInt(String(filter.maxResults)) })
         .sort(model.sortExpenses(sort));
 
       var expenses = [];
