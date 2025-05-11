@@ -23,13 +23,6 @@ jobs:
         gcloud auth activate-service-account toto-cicd@totoexperiments.iam.gserviceaccount.com --key-file=./credentials.json
         gcloud auth configure-docker europe-west1-docker.pkg.dev
 
-      # - name: Login to Container Registry
-      # uses: docker/login-action@v1
-      # with: 
-      #     registry: eu.gcr.io
-      #     username: _json_key
-      #     password: ${{ secrets.CICD_SERVICE_ACCOUNT }}
-
     - name: Create Environment Variables
       run: |
         export PACKAGE_VERSION=$(cat package.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[",]//g' | tr -d '[[:space:]]')
