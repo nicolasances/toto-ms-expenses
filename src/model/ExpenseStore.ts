@@ -121,6 +121,69 @@ export class ExpenseStore {
     }
 
     /**
+     * 
+     * @param user the user to use to filter
+     * @param yearMonthGte the start date to consider
+     * @param targetCurrency the target currency
+     * 
+     * This method will return the total amount of expenses for each month, grouped by category
+     */
+    async getCategoryTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string): Promise<CategoryMonthsTotals[]> {
+
+        // Get the exchange rate from EUR to Target Currency
+        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+
+        // Prepare the filter
+        const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+
+        // Group by category and yearMonth
+        const groupByCategoryAndMonth = {
+            $group: {
+                _id: { category: "$category", yearMonth: "$yearMonth", currency: "$currency" },
+                totalAmount: { $sum: "$amount" }
+            }
+        };
+
+        // Sort by category and yearMonth
+        const sort = { $sort: { "_id.category": 1, "_id.yearMonth": 1 } };
+
+        // Aggregate pipeline
+        const aggregate = [filter, groupByCategoryAndMonth, sort];
+
+        // Fire the query
+        const cursor = this.db.collection(this.config.getCollections().expenses).aggregate(aggregate);
+
+        // Output: map of categories to their totals per month
+        const categoryMonthsTotalsMap: Map<string, CategoryMonthsTotals> = new Map();
+
+        while (await cursor.hasNext()) {
+            // Get the item
+            const item = await cursor.next() as any;
+
+            let amount = item.totalAmount;
+
+            // Convert the amount to the target currency if needed
+            if (item._id.currency !== targetCurrency) {
+                amount = parseFloat((amount * rate).toFixed(2));
+            }
+
+            // Get or create the CategoryMonthsTotals for this category
+            const category = item._id.category;
+            if (!categoryMonthsTotalsMap.has(category)) {
+                categoryMonthsTotalsMap.set(category, new CategoryMonthsTotals(yearMonthGte, category));
+            }
+
+            // Add the month total to the corresponding category
+            const categoryMonthsTotals = categoryMonthsTotalsMap.get(category)!;
+            categoryMonthsTotals.addMonthTotal(new MonthTotal(item._id.yearMonth, amount));
+        }
+
+        // Convert the map to an array of CategoryMonthsTotals
+        return Array.from(categoryMonthsTotalsMap.values());
+
+    }
+
+    /**
      * Calculates the total amount of expenses for every year starting at yearMonthGte and ending this year (included)
      * 
      * @param user the user to use to filter
@@ -299,6 +362,60 @@ export class MonthTotal {
     addAmount(amount: number) {
         this.amount += amount
     }
+}
+
+/**
+ * Interface used to represent the total amount of expenses for each month
+ * in a given period represented by the interface [yearMonthGte, today]
+ */
+export class CategoryMonthsTotals {
+
+    category: string
+    months: MonthTotal[] = []
+    yearMonthGte: number
+
+    constructor(yearMonthGte: number, category: string) {
+        this.yearMonthGte = yearMonthGte
+        this.category = category
+    }
+
+    /**
+     * Add this month's total to the accumulated list of month totals
+     * 
+     * Note that if a MonthTotal with same yearMonth has already been added, 
+     * this method will just add the amount to the existing MonthTotal
+     * 
+     * @param monthTotal the month total to add
+     */
+    addMonthTotal(monthTotal: MonthTotal) {
+
+        // If the month is already present, just add the amount to it
+        let found = false;
+
+        for (const month of this.months) {
+
+            if (month.yearMonth == monthTotal.yearMonth) {
+                month.addAmount(monthTotal.amount)
+                found = true
+            }
+
+        }
+
+        if (!found) this.months.push(monthTotal)
+    }
+
+    find(year: string, month: string): MonthTotal | null {
+
+        for (const monthTotal of this.months) {
+
+            if (monthTotal.yearMonth == `${year}${month}`) return monthTotal
+
+        }
+
+        return null
+
+    }
+
 }
 
 /**
