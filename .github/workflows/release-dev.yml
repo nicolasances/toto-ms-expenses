@@ -19,7 +19,7 @@ jobs:
 
     - name: Authenticate to Artifact Registry
       run: |
-        echo "${{ secrets.CICD_SERVICE_ACCOUNT }}" > ./credentials.json
+        echo '${{ secrets.CICD_SERVICE_ACCOUNT }}' > ./credentials.json
         gcloud auth activate-service-account toto-cicd@totoexperiments.iam.gserviceaccount.com --key-file=./credentials.json
         gcloud auth configure-docker europe-west1-docker.pkg.dev
 
