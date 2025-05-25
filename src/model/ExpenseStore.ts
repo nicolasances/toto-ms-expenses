@@ -184,6 +184,74 @@ export class ExpenseStore {
     }
 
     /**
+     * Retrieves the average monthly spend for each category of expense and for each year, starting from yearMonthGte and ending this year (included) for the given user. 
+     * 
+     * @param user the user to use to filter
+     * @param yearMonthGte the start date to consider
+     */
+    async getAverageYearlySpendPerCategory(user: string, yearMonthGte: number, targetCurrency: string): Promise<AverageMonthlyCategorySpendPerYear[]> {
+
+        // Get the exchange rate from EUR to Target Currency
+        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency);
+
+        // Prepare the filter
+        const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
+
+        // Group by category and year
+        const groupByCategoryAndYear = {
+            $group: {
+                _id: { category: "$category", year: { $substr: ["$yearMonth", 0, 4] }, currency: "$currency" },
+                totalAmount: { $sum: "$amount" }
+            }
+        };
+
+        // Sort by category and year
+        const sort = { $sort: { "_id.category": 1, "_id.year": 1 } };
+
+        // Aggregate pipeline
+        const aggregate = [filter, groupByCategoryAndYear, sort];
+
+        // Fire the query
+        const cursor = this.db.collection(this.config.getCollections().expenses).aggregate(aggregate);
+
+        // Output: map of categories to their average yearly spend
+        const categorySpendMap: Map<string, AverageMonthlyCategorySpendPerYear> = new Map();
+
+        while (await cursor.hasNext()) {
+            // Get the item
+            const item = await cursor.next() as any;
+
+            let amount = item.totalAmount;
+
+            // Convert the amount to the target currency if needed
+            if (item._id.currency !== targetCurrency) {
+                amount = parseFloat((amount * rate).toFixed(2));
+            }
+
+            // Calculate the number of months in the current year
+            const currentYear = new Date().getFullYear();
+            const isCurrentYear = parseInt(item._id.year) === currentYear;
+            const monthsInYear = isCurrentYear ? new Date().getMonth() + 1 : 12;
+
+            // Calculate the average monthly spend
+            const avgMonthlySpend = parseFloat((amount / monthsInYear).toFixed(2));
+
+            // Get or create the AverageCategorySpendPerYear for this category
+            const category = item._id.category;
+            if (!categorySpendMap.has(category)) {
+                categorySpendMap.set(category, new AverageMonthlyCategorySpendPerYear(category));
+            }
+
+            // Add the average monthly spend for this year
+            const categorySpend = categorySpendMap.get(category)!;
+            categorySpend.avgMonthlySpend.push(new AverageMonthlySpend(parseInt(item._id.year), avgMonthlySpend));
+        }
+
+        // Convert the map to an array of AverageCategorySpendPerYear
+        return Array.from(categorySpendMap.values());
+    }
+
+    /**
      * Calculates the total amount of expenses for every year starting at yearMonthGte and ending this year (included)
      * 
      * @param user the user to use to filter
@@ -541,4 +609,24 @@ export class YearsTotals {
         return null
     }
 
+}
+
+export class AverageMonthlySpend {
+    year: number
+    amount: number
+
+    constructor(year: number, amount: number) {
+        this.year = year
+        this.amount = amount
+    }
+}
+
+export class AverageMonthlyCategorySpendPerYear {
+
+    category: string
+    avgMonthlySpend: AverageMonthlySpend[] = []
+
+    constructor(category: string) {
+        this.category = category
+    }
 }
