@@ -244,8 +244,9 @@ export class ExpenseStore {
 
             // Add the average monthly spend for this year
             const categorySpend = categorySpendMap.get(category)!;
-            categorySpend.avgMonthlySpend.push(new AverageMonthlySpend(parseInt(item._id.year), avgMonthlySpend));
+            categorySpend.addAvgMonthlySpend(avgMonthlySpend, parseInt(item._id.year));
         }
+
 
         // Convert the map to an array of AverageCategorySpendPerYear
         return Array.from(categorySpendMap.values());
@@ -628,5 +629,23 @@ export class AverageMonthlyCategorySpendPerYear {
 
     constructor(category: string) {
         this.category = category
+    }
+
+    addAvgMonthlySpend(amount: number, year: number) {
+        
+        // Find an existing entry for the year
+        let found = false
+        for (const spend of this.avgMonthlySpend) {
+            if (spend.year === year) {
+                spend.amount += amount;
+                found = true; 
+                break;
+            }
+        }
+
+        if (!found) {
+            // If not found, create a new entry
+            this.avgMonthlySpend.push(new AverageMonthlySpend(year, amount));
+        }
     }
 }
