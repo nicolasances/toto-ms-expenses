@@ -8,3 +8,9 @@ Compared to version 1.0, it is:
 Check the following resources: 
  * [TypeScript setup documentation](docs/typescript.md)
  * [Database Backup & Restore](docs/dbBackup.md)
+
+## Version 1.20.0
+Provides an API with **the average yearly spend for each category**.
+
+## Version 1.19.0
+Introduces APIs for statistics on supermarket spend (expenses with category supermarket).

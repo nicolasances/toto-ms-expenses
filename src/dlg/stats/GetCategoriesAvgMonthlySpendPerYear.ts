@@ -3,25 +3,21 @@ import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { UserContext } from "../../controller/model/UserContext";
 import { ExecutionContext } from "../../controller/model/ExecutionContext";
 import { ControllerConfig } from "../../Config";
+import { ExpenseStore } from "../../model/ExpenseStore";
 import { ValidationError } from "../../controller/validation/Validator";
 import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
-import { GetIncomesFilter, IncomeStore } from "../../model/IncomeStore";
+import moment from "moment-timezone";
 
-export class GetIncomes implements TotoDelegate {
+export class GetCategoriesAvgMonthlySpendPerYear implements TotoDelegate {
 
   async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
-
-    const filter = req.query as Filter;
-    const sort = req.query;
 
     const logger = execContext.logger;
     const cid = execContext.cid;
     const config = execContext.config as ControllerConfig;
 
-    // Retrieve the user from the context
-    const user = userContext.email;
-
-    logger.compute(cid, `Retrieving incomes with filter ${JSON.stringify(filter)} for user [${user}]`, "info");
+    // Extract the user
+    const userEmail = userContext.email
 
     let client;
 
@@ -30,20 +26,20 @@ export class GetIncomes implements TotoDelegate {
       client = await config.getMongoClient();
       const db = client.db(config.getDBName());
 
-      // Init the Store
-      const store = new IncomeStore(db, execContext);
+      // Find out where to start (yearMonth) and where to end
+      let yearMonthGte = req.query.yearMonthGte == null ? 190001 : parseInt(String(req.query.yearMonthGte));
+      let yearMonthLte = req.query.yearMonthLte == null ? parseInt(moment().tz("Europe/Rome").format("YYYYMM")) : parseInt(String(req.query.yearMonthLte));
 
-      // Build the filter
-      const filter = new GetIncomesFilter(user)
+      // Get the target currency 
+      const targetCurrency = req.query.currency ?? "EUR"
 
-      filter.yearMonth = req.query.yearMonth ? String(req.query.yearMonth) : undefined;
-      filter.last = req.query.last ? parseInt(String(req.query.last)) : undefined;
-      filter.category = req.query.category ? String(req.query.category) : undefined;
+      // Initialize the Store
+      const store = new ExpenseStore(db, execContext);
 
-      // Get the incomes
-      const incomes = await store.getIncomes(filter)
+      // Retrieve the statistics from the store
+      const categories = await store.getAverageYearlySpendPerCategory(userEmail, yearMonthGte, String(targetCurrency));
 
-      return {incomes: incomes}
+      return { categories: categories }
 
     } catch (error) {
 
@@ -66,4 +62,5 @@ export class GetIncomes implements TotoDelegate {
 
 interface Filter {
   maxResults?: number,
+  user?: string
 }
