@@ -29,12 +29,14 @@ import { GetSavingsPerYear } from "./dlg/stats/GetSavingsPerYear";
 import { GetSavingsPerMonth } from "./dlg/stats/GetSavingsPerMonth";
 import { GetCategoriesTotalsPerMonth } from "./dlg/stats/GetCategoriesTotalsPerMonth";
 import { GetCategoriesAvgMonthlySpendPerYear } from "./dlg/stats/GetCategoriesAvgMonthlySpendPerYear";
+import { DeleteExpense } from "./dlg/DeleteExpense";
 
 const api = new TotoAPIController("toto-ms-expenses", new ControllerConfig())
 
 api.path("POST", "/expenses", new PostExpense())
 api.path("GET", "/expenses", new GetExpenses())
 api.path("GET", "/expenses/:id", new GetExpense());
+api.path("DELETE", "/expenses/:id", new DeleteExpense());
 api.path("PUT", "/expenses/:id", new PutExpense());
 api.path("POST", "/expenses/:id/tags", new TagExpense());
 api.path("DELETE", "/expenses/:id/tags/:tagId", new UntagExpense());

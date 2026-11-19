@@ -317,6 +317,17 @@ export class ExpenseStore {
         return TotoExpense.fromPO(expense)
 
     }
+
+    /**
+     * Deletes an expense
+     * 
+     * @param expenseId the expense Id
+     */
+    async deleteExpense(expenseId: string): Promise<void> {
+
+        const expense = await this.db.collection(this.config.getCollections().expenses).deleteOne({ _id: new ObjectId(expenseId) })
+
+    }
 }
 
 export class TotoExpense {
