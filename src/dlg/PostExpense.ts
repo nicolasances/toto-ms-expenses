@@ -1,21 +1,24 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
-import { UserContext } from "../controller/model/UserContext";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
-import { ValidationError } from "../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "./ParsedRequest";
 import { ControllerConfig } from "../Config";
 import { ExpenseStore, TotoExpense } from "../model/ExpenseStore";
 
 
-export class PostExpense implements TotoDelegate {
+export class PostExpense extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
         const body = req.body
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         // Putting a default description
         let description = body.description
@@ -29,16 +32,14 @@ export class PostExpense implements TotoDelegate {
         // Extract user
         const user = userContext.email;
 
-        let client;
 
         try {
 
             // Instantiate the DB
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Create the store
-            const expenseStore = new ExpenseStore(db, execContext);
+            const expenseStore = new ExpenseStore(db, config, cid);
 
             // Create the expense
             const expense = new TotoExpense(body.amount, body.date, description, body.currency, user, body.category, body.monthly)
@@ -62,9 +63,6 @@ export class PostExpense implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

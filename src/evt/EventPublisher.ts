@@ -1,81 +1,56 @@
-import { PubSub, Topic } from "@google-cloud/pubsub";
-import moment from "moment";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { ControllerConfig } from "../Config";
-
-const pubsub = new PubSub({ projectId: process.env.GCP_PID });
-
-const topics = new Array<TopicWrapper>()
+import moment from "moment-timezone";
+import { Logger, MessageDestination, TotoMessage, TotoMessageBus } from "totoms";
 
 /**
  * Manages the publishing of an event
  */
 export class EventPublisher {
 
-    execContext: ExecutionContext;
-    cid: string;
-    config: ControllerConfig;
-    topic: TopicWrapper | null;
+    messageBus: TotoMessageBus;     // The totoms message bus used to publish
+    cid?: string;                   // The correlation id attached to published events
+    topicName: TOPIC_TYPE;          // The logical name of the topic (as configured in index.ts)
 
-    constructor(execContext: ExecutionContext, topicName: TOPIC_TYPE) {
+    constructor(messageBus: TotoMessageBus, cid: string | undefined, topicName: TOPIC_TYPE) {
 
-        this.execContext = execContext;
-        this.cid = String(execContext.cid);
-        this.config = this.execContext.config as ControllerConfig
-
-        const logger = execContext.logger;
-
-        this.topic = findTopicInCache(topicName);
-
-        if (!this.topic) {
-
-            logger.compute(this.cid, `Instantiating PubSub Topic for topic [${topicName}]`, "info");
-
-            this.topic = new TopicWrapper(topicName, pubsub.topic(topicName));
-
-            logger.compute(this.cid, `PubSub Topic [${topicName}] instantiated!`, "info");
-        }
+        this.messageBus = messageBus;
+        this.cid = cid;
+        this.topicName = topicName;
 
     }
 
     /**
      * Publishes an event to the topic passed in the constructor
+     * 
      * @param id id of the object for which an event is published
      * @param eventType name of the event
      * @param msg message that describe the event
      * @param data optional additional JSON data to attach to the event
+     * 
      * @returns Promise with the publishing result
      */
     publishEvent = async (id: string, eventType: string, msg: string, data?: any): Promise<PublishingResult> => {
 
-        const logger = this.execContext.logger;
+        const logger = Logger.getInstance();
 
-        let timestamp = moment().tz('Europe/Rome').format('YYYY.MM.DD HH:mm:ss');
-
-        // Push message to PubSub
-        let message = JSON.stringify({
-            timestamp: timestamp,
-            cid: this.cid,
+        const message: TotoMessage = {
+            timestamp: moment().tz('Europe/Rome').format('YYYY.MM.DD HH:mm:ss'),
+            cid: String(this.cid),
             id: id,
             type: eventType,
             msg: msg,
             data: data
-        });
-
-        logger.compute(this.cid, "Publishing the event [ " + eventType + " ] for object with id [ " + id + " ]. The following message is to be published: [ " + message + " ]", "info");
+        };
 
         try {
 
-            await this.topic!.topic.publishMessage({ data: Buffer.from(message) });
-
-            logger.compute(this.cid, "Successfully published the event [ " + eventType + " ]", "info");
+            await this.messageBus.publishMessage(new MessageDestination({ topic: this.topicName }), message);
 
             return { published: true }
 
         } catch (e: any) {
 
-            logger.compute(this.cid, "Publishing the event [ " + eventType + " ] failed. The following message had to be published: [ " + message + " ]", "error");
-            logger.compute(this.cid, e, 'error');
+            logger.compute(this.cid, `Publishing the event [ ${eventType} ] failed. The following message had to be published: [ ${JSON.stringify(message)} ]`, "error");
+            logger.compute(this.cid, `${e}`, 'error');
             console.error(e);
 
             return { published: false }
@@ -86,7 +61,7 @@ export class EventPublisher {
 }
 
 export interface PublishingResult {
-    published: boolean
+    published: boolean     // Whether the event was successfully published
 }
 
 export type TOPIC_TYPE = "expenses" | "tags"
@@ -102,24 +77,4 @@ export const EVENTS = {
     // A tag has been deleted
     tagDeleted: "tagDeleted"
 
-}
-
-class TopicWrapper {
-
-    topicName: string;
-    topic: Topic;
-
-    constructor(topicName: string, topic: Topic) {
-        this.topicName = topicName;
-        this.topic = topic;
-    }
-}
-
-const findTopicInCache = (topicName: string) => {
-
-    for (let topic of topics) {
-        if (topic.topicName == topicName) return topic;
-    }
-
-    return null;
 }

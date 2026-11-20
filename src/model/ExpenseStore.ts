@@ -2,18 +2,17 @@ import moment from "moment";
 import { Db, Document, ObjectId, WithId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
 
 export class ExpenseStore {
 
     db: Db;
-    execContext: ExecutionContext;
+    cid?: string;
     config: ControllerConfig;
 
-    constructor(db: Db, execContext: ExecutionContext) {
+    constructor(db: Db, config: ControllerConfig, cid?: string) {
         this.db = db;
-        this.config = execContext.config as ControllerConfig;
-        this.execContext = execContext;
+        this.config = config;
+        this.cid = cid;
     }
 
     /**
@@ -26,7 +25,7 @@ export class ExpenseStore {
 
         // Fill all fields that are missing
         // Convert amount in euro
-        expense.amountInEuro = await new CurrencyConversion(this.execContext).convertAmountToEUR(expense.amount, expense.currency);
+        expense.amountInEuro = await new CurrencyConversion(this.cid).convertAmountToEUR(expense.amount, expense.currency);
 
         // Save the expense to DB
         const result = await this.db.collection(this.config.getCollections().expenses).insertOne(expense);
@@ -55,7 +54,7 @@ export class ExpenseStore {
         if (!result || result.length == 0) return { yearMonth: yearMonth, currency: targetCurrency, total: 0 }
 
         // Get the conversion rate for the currency conversion (EUR to target currency)
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Convert the amount in the target currency, if needed
         let amountInLocalCurrency = result[0].total;
@@ -80,7 +79,7 @@ export class ExpenseStore {
     async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number): Promise<MonthsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
         let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } };
@@ -131,7 +130,7 @@ export class ExpenseStore {
     async getCategoryTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string): Promise<CategoryMonthsTotals[]> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
         const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
@@ -192,7 +191,7 @@ export class ExpenseStore {
     async getAverageYearlySpendPerCategory(user: string, yearMonthGte: number, targetCurrency: string): Promise<AverageMonthlyCategorySpendPerYear[]> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency);
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency);
 
         // Prepare the filter
         const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };
@@ -262,7 +261,7 @@ export class ExpenseStore {
     async getTotalsPerYear(user: string, yearMonthGte: number, targetCurrency: string): Promise<YearsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
         const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };

@@ -1,32 +1,33 @@
 import { Request } from "express";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
-import { UserContext } from "../../controller/model/UserContext";
-import { ValidationError } from "../../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, basicallyHandleError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { Tag, ITagPO, convertCurrency } from "../../model/Tag";
-import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 
 /**
  * Retrieves the list of tags created by the user
  */
-export class GetTags implements TotoDelegate {
+export class GetTags extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         // Target currency should be provided in the request query parameters. Default is EUR
         const targetCurrency = req.query.targetCurrency ?? "EUR";
 
-        let client;
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             logger.compute(cid, `Retrieving tags for user [${userContext.email}]`)
 
@@ -39,16 +40,13 @@ export class GetTags implements TotoDelegate {
 
                 const tag = await result.next() as unknown as ITagPO
 
-                tags.push(await convertCurrency(new Tag(tag), String(targetCurrency), execContext))
+                tags.push(await convertCurrency(new Tag(tag), String(targetCurrency), cid))
             }
 
             return { tags: tags }
 
         } catch (error) {
             basicallyHandleError(error, logger, cid)
-        }
-        finally {
-            if (client) client.close();
         }
     }
 

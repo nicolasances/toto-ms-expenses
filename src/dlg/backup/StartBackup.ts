@@ -1,38 +1,37 @@
 import fs from 'fs'
 import moment from 'moment-timezone';
 import { Request } from "express";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
-import { UserContext } from "../../controller/model/UserContext";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError, correlationId } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { Storage } from "@google-cloud/storage";
-import { correlationId } from '../../controller/util/CorrelationId';
 
 const storage = new Storage();
 
-export class StartBackup implements TotoDelegate {
+export class StartBackup extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+    parseRequest(req: Request): ParsedRequest {
 
-        const logger = execContext.logger;
-        const cid = execContext.cid ?? correlationId();
+        return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+    }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const logger = Logger.getInstance();
+        const cid = this.cid ?? correlationId();
         const bucketName = String(process.env.BACKUP_BUCKET);
 
         const today = moment()
         const twoDaysAgo = moment().add(-2, "days");
 
-        let client;
-
         try {
 
             logger.compute(cid, `Starting Database Backup`)
 
-            const config = execContext.config as ControllerConfig;
+            const config = this.config as ControllerConfig;
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Iterate through the relevant collections
             for (let collection of Object.keys(config.getCollections())) {
@@ -91,9 +90,6 @@ export class StartBackup implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
     }
 

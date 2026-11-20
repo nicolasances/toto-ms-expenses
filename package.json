@@ -28,7 +28,8 @@
     "path": "^0.12.7",
     "readline": "^1.3.0",
     "request": "^2.88.2",
-    "toto-logger": "^5.0.0"
+    "toto-logger": "^5.0.0",
+    "totoms": "^2.5.0"
   },
   "devDependencies": {
     "@types/connect-busboy": "^1.0.2",

@@ -1,24 +1,27 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { UserContext } from "../controller/model/UserContext";
-import { ValidationError } from "../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, ValidationError, basicallyHandleError } from "totoms";
+import { ParsedRequest } from "./ParsedRequest";
 import { ControllerConfig } from "../Config";
 import { ObjectId } from "mongodb";
-import { basicallyHandleError } from "../controller/util/ErrorUtil";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
 import { EVENTS, EventPublisher } from "../evt/EventPublisher";
 
 /**
  * Untags a specific expense, i.e. removes a specific tag from that expense
  */
-export class UntagExpense implements TotoDelegate {
+export class UntagExpense extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
         const body = req.body;
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         // 1. Validate
         if (!req.params.id) throw new ValidationError(400, "No expense Id provided");
@@ -27,18 +30,16 @@ export class UntagExpense implements TotoDelegate {
         const tagId = req.params.tagId;
         const expenseId = req.params.id;
 
-        let client;
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // 1. Update the expense, attaching the tag id to it
             const updateExpenseResult = await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(expenseId) }, { $pull: { tags: tagId } })
 
             // 2. Publish an tag with the updated "tag" 
-            const publishingResult = await new EventPublisher(execContext, "expenses").publishEvent(expenseId, EVENTS.expenseUntagged, `Tag ${tagId} was removed from expense ${expenseId} `, { tagId: tagId })
+            const publishingResult = await new EventPublisher(this.messageBus, cid, "expenses").publishEvent(expenseId, EVENTS.expenseUntagged, `Tag ${tagId} was removed from expense ${expenseId} `, { tagId: tagId })
 
             // 3. Return 
             return { modifiedExpenses: updateExpenseResult.modifiedCount, expenseUntaggedEventPublished: publishingResult.published }
@@ -46,9 +47,6 @@ export class UntagExpense implements TotoDelegate {
 
         } catch (error) {
             basicallyHandleError(error, logger, cid);
-        }
-        finally {
-            if (client) client.close();
         }
     }
 

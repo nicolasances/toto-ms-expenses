@@ -1,28 +1,28 @@
 import fs from 'fs'
 import { Request } from "express";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
-import { UserContext } from "../../controller/model/UserContext";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError, correlationId } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { Bucket, Storage } from "@google-cloud/storage";
-import { correlationId } from '../../controller/util/CorrelationId';
 import * as readline from 'readline';
 import { Db, ObjectId } from 'mongodb';
 
 const storage = new Storage();
 
-export class StartRestore implements TotoDelegate {
+export class StartRestore extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+    parseRequest(req: Request): ParsedRequest {
 
-        const logger = execContext.logger;
-        const cid = execContext.cid ?? correlationId();
+        return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+    }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const logger = Logger.getInstance();
+        const cid = this.cid ?? correlationId();
         const bucketName = String(process.env.BACKUP_BUCKET);
-        const config = execContext.config as ControllerConfig;
-
-        let client;
+        const config = this.config as ControllerConfig;
 
         try {
 
@@ -37,11 +37,10 @@ export class StartRestore implements TotoDelegate {
 
             logger.compute(cid, `Starting Expenses Database Restore. Restoring date [${date}]`)
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Check that backup data is available
-            const available = await isBackupAvailable(db, bucket, date, execContext);
+            const available = await isBackupAvailable(bucket, date, config);
 
             logger.compute(cid, `Backup data ${available ? "available" : "NOT available"} on date ${date}`)
 
@@ -53,7 +52,7 @@ export class StartRestore implements TotoDelegate {
             for (let collection of Object.keys(config.getCollections())) {
 
                 // Restore the collection
-                promises.push(restoreCollection(db, bucket, collection, date, execContext))
+                promises.push(restoreCollection(db, bucket, collection, date, cid))
 
             }
 
@@ -77,9 +76,6 @@ export class StartRestore implements TotoDelegate {
             }
 
         }
-        finally {
-            if (client) client.close();
-        }
     }
 
 }
@@ -87,13 +83,11 @@ export class StartRestore implements TotoDelegate {
 /**
  * Checks if all the backup data is available before starting the restore.
  * 
- * @param db 
  * @param bucket the backup bucket
  * @param date the date to restore
+ * @param config the service configuration
  */
-async function isBackupAvailable(db: Db, bucket: Bucket, date: string, execContext: ExecutionContext): Promise<boolean> {
-
-    const config = execContext.config as ControllerConfig;
+async function isBackupAvailable(bucket: Bucket, date: string, config: ControllerConfig): Promise<boolean> {
 
     for (let collection of Object.keys(config.getCollections())) {
 
@@ -116,14 +110,13 @@ async function isBackupAvailable(db: Db, bucket: Bucket, date: string, execConte
  * @param bucket the bucket where the expense data is stored
  * @param collection the name of the collection 
  * @param date the date to restore
- * @param execContext 
+ * @param cid the correlation id
  * 
  * @returns the count of elements restored
  */
-async function restoreCollection(db: Db, bucket: Bucket, collection: string, date: string, execContext: ExecutionContext): Promise<number> {
+async function restoreCollection(db: Db, bucket: Bucket, collection: string, date: string, cid?: string): Promise<number> {
 
-    const logger = execContext.logger
-    const cid = execContext.cid
+    const logger = Logger.getInstance();
 
     logger.compute(cid, `Starting Restore of collection [${collection}]`)
 

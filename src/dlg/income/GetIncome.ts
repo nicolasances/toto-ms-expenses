@@ -1,32 +1,33 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { GetIncomesFilter, IncomeStore } from "../../model/IncomeStore";
 
-export class GetIncome implements TotoDelegate {
+export class GetIncome extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
 
     // Retrieve the user from the context
     const user = userContext.email;
 
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
       // Init the Store
-      const store = new IncomeStore(db, execContext);
+      const store = new IncomeStore(db, config, cid);
 
       // Get the income transaction
       const income = await store.getIncome(req.params.id)
@@ -45,9 +46,6 @@ export class GetIncome implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }

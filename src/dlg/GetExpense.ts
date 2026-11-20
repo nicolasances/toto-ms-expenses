@@ -1,30 +1,31 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { UserContext } from "../controller/model/UserContext";
-import { ValidationError } from "../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "./ParsedRequest";
 import { ControllerConfig } from "../Config";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
 import { ExpenseStore } from "../model/ExpenseStore";
 
-export class GetExpense implements TotoDelegate {
+export class GetExpense extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
 
     const expenseId = req.params.id
     
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
-      const expense = await new ExpenseStore(db, execContext).getExpense(expenseId);
+      const expense = await new ExpenseStore(db, config, cid).getExpense(expenseId);
 
       return expense
 
@@ -40,9 +41,6 @@ export class GetExpense implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }

@@ -1,20 +1,23 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { ExpenseStore, GetMonthTotalResult } from "../../model/ExpenseStore";
 
 
-export class GetMonthTotal implements TotoDelegate {
+export class GetMonthTotal extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<GetMonthTotalResult> {
+  parseRequest(req: Request): ParsedRequest {
 
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<GetMonthTotalResult> {
+
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         // Validate mandatory fields
         const yearMonth = req.params.yearMonth
@@ -23,16 +26,14 @@ export class GetMonthTotal implements TotoDelegate {
         // Extract user
         const user = userContext.email;
 
-        let client;
 
         try {
 
             // Instantiate the DB
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Instantiate the Store
-            const store = new ExpenseStore(db, execContext)
+            const store = new ExpenseStore(db, config, cid)
 
             // Get the specified yearMonth total
             const total = await store.getMonthTotal(user, yearMonth, targetCurrency);
@@ -51,9 +52,6 @@ export class GetMonthTotal implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

@@ -1,37 +1,38 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { GetIncomesFilter, IncomeStore } from "../../model/IncomeStore";
 
-export class GetIncomes implements TotoDelegate {
+export class GetIncomes extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
     const filter = req.query as Filter;
     const sort = req.query;
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
 
     // Retrieve the user from the context
     const user = userContext.email;
 
     logger.compute(cid, `Retrieving incomes with filter ${JSON.stringify(filter)} for user [${user}]`, "info");
 
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
       // Init the Store
-      const store = new IncomeStore(db, execContext);
+      const store = new IncomeStore(db, config, cid);
 
       // Build the filter
       const filter = new GetIncomesFilter(user)
@@ -57,9 +58,6 @@ export class GetIncomes implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }

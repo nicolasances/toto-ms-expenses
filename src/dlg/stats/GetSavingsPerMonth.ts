@@ -1,31 +1,32 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { IncomeStore } from "../../model/IncomeStore";
 import { ExpenseStore, MonthsTotals, YearsTotals } from "../../model/ExpenseStore";
 import moment from "moment-timezone";
 
-export class GetSavingsPerMonth implements TotoDelegate {
+export class GetSavingsPerMonth extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
 
     // Extract the user
     const userEmail = userContext.email
 
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
       // Find out where to start (yearMonth)
       let yearMonthGte = req.query.yearMonthGte == null ? 190001 : parseInt(String(req.query.yearMonthGte));
@@ -35,10 +36,10 @@ export class GetSavingsPerMonth implements TotoDelegate {
       const targetCurrency = req.query.currency ?? "EUR"
 
       // 1. Get the total expenses of each month
-      const expensesPerMonth = await new ExpenseStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
+      const expensesPerMonth = await new ExpenseStore(db, config, cid).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
 
       // 2. Get the total incomes of each month
-      const incomesPerMonth = await new IncomeStore(db, execContext).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
+      const incomesPerMonth = await new IncomeStore(db, config, cid).getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte)
 
       // 3. Calculate the savings of each year
       return new SavingsPerMonth(expensesPerMonth, incomesPerMonth)
@@ -56,9 +57,6 @@ export class GetSavingsPerMonth implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }
