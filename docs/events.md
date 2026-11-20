@@ -12,7 +12,7 @@ In general an expense can be associated with **only a single event**.
 
 ## Creating an Event
 
-The creation of an *event* happens by *POSTing** an event through the `POST /events` API. <br>
+The creation of an *event* happens by *POSTing** an event through the `POST /expenses/events` API. <br>
 
 ## Pub/Sub events (technical)
 
@@ -21,4 +21,4 @@ Not to be confused with the *Events* described above: the service also publishes
 Messaging is handled by the `totoms` message bus (see `src/index.ts`, `messageBusConfiguration`):
 * **Topics**: the logical topics `expenses` and `tags` are resolved through the secrets `topic-name-expenses` and `topic-name-tags` (the secret value is the actual Pub/Sub topic name). Messages are published through `EventPublisher` (`src/evt/EventPublisher.ts`).
 * **Handlers**: handlers extend `TotoMessageHandler` and are registered in `src/index.ts`. Each handler declares the message type it handles: `OnExpenseTagged` (`expenseTagged`), `OnExpenseUntagged` (`expenseUntagged`) and `OnTagDeleted` (`tagDeleted`) in `src/evt/handlers/`.
-* **Push endpoint**: Pub/Sub push subscriptions call `POST /events`, which totoms registers. `POST /events/tag` is kept for existing subscriptions and forwards to the same message bus handling (`EventsTagHook`).
+* **Push endpoint**: Pub/Sub push subscriptions call `POST /expenses/events`, which totoms registers. `POST /expenses/events/tag` is kept for existing subscriptions and forwards to the same message bus handling (`EventsTagHook`).
