@@ -34,6 +34,7 @@ import { OnTagDeleted } from "./evt/handlers/OnTagDeleted";
 
 const config: TotoMicroserviceConfiguration = {
     serviceName: "toto-ms-expenses",
+    basePath: '/expenses',
     environment: {
         hyperscaler: (process.env.HYPERSCALER as SupportedHyperscalers) || "gcp",
         hyperscalerConfiguration: getHyperscalerConfiguration()
