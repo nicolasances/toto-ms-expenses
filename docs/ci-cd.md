@@ -20,7 +20,7 @@ Terraform owns the *shape* of the GKE workload (Deployment, Service, route). CI 
 
 ## Configuration
 
-Per GitHub environment, variables `GCP_PID`, `GKE_PROJECT_ID`, `GKE_CLUSTER_NAME`, `GKE_CLUSTER_LOCATION`, `GKE_NAMESPACE`, and the secrets `CICD_SERVICE_ACCOUNT`, `SERVICE_ACCOUNT` and `BACKUP_BUCKET` (the `toto-cicd` key, which can only access its own namespace).
+Per GitHub environment, variables `GCP_PID`, `GKE_PROJECT_ID`, `GKE_CLUSTER_NAME`, `GKE_CLUSTER_LOCATION`, `GKE_NAMESPACE`, and the secrets `CICD_SERVICE_ACCOUNT`, `SERVICE_ACCOUNT` and `BACKUP_BUCKET`. `CICD_SERVICE_ACCOUNT` is the `toto-cicd` key, which can only access its own namespace.
 
 ## Rollback
 
