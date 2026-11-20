@@ -7,7 +7,6 @@ on:
     paths-ignore: 
       - 'docs/**'
       - '**.md'
-      - 'k8s/**'
       - 'infra/**'
 
 # Two deploys to the same namespace must not race
