@@ -1,32 +1,33 @@
 import { Request } from "express";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
-import { UserContext } from "../../controller/model/UserContext";
-import { ValidationError } from "../../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, basicallyHandleError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
 import { Tag, ITagPO, convertCurrency } from "../../model/Tag";
-import { basicallyHandleError } from "../../controller/util/ErrorUtil";
 import { ExpenseModel } from "../../model/ExpenseModel";
 
 /**
  * Retrieves the list of expenses that have the specified tag
  */
-export class GetTagExpenses implements TotoDelegate {
+export class GetTagExpenses extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         const tagId = req.params.id;
 
-        let client;
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             logger.compute(cid, `Retrieving expenses related to tag [${tagId}]`)
 
@@ -48,9 +49,6 @@ export class GetTagExpenses implements TotoDelegate {
 
         } catch (error) {
             basicallyHandleError(error, logger, cid)
-        }
-        finally {
-            if (client) client.close();
         }
     }
 

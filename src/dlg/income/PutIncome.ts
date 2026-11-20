@@ -1,32 +1,33 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
 import { IncomeStore, TotoIncome } from "../../model/IncomeStore";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 
 
-export class PutIncome implements TotoDelegate {
+export class PutIncome extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
         const body = req.body
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
-        let client;
 
         try {
 
             // Instantiate the DB
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Create the store
-            const incomeStore = new IncomeStore(db, execContext);
+            const incomeStore = new IncomeStore(db, config, cid);
 
             // Update the income transaction
             const updateResult = await incomeStore.updateIncome(req.params.id, body);
@@ -47,9 +48,6 @@ export class PutIncome implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

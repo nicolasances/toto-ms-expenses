@@ -1,30 +1,31 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { IncomeStore } from "../../model/IncomeStore";
 import moment from "moment-timezone";
 
-export class GetIncomesTotalPerMonth implements TotoDelegate {
+export class GetIncomesTotalPerMonth extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
 
     // Extract the user
     const userEmail = userContext.email
 
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
       // Find out where to start (yearMonth)
       let yearMonthGte = req.query.yearMonthGte == null ? 190001 : parseInt(String(req.query.yearMonthGte));
@@ -34,7 +35,7 @@ export class GetIncomesTotalPerMonth implements TotoDelegate {
       const targetCurrency = req.query.currency ?? "EUR"
 
       // Initialize the Store
-      const store = new IncomeStore(db, execContext);
+      const store = new IncomeStore(db, config, cid);
 
       // Retrieve the statistics from the store
       const months = await store.getTotalsPerMonth(userEmail, yearMonthGte, String(targetCurrency), yearMonthLte);
@@ -53,9 +54,6 @@ export class GetIncomesTotalPerMonth implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }

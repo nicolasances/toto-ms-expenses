@@ -1,21 +1,24 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
 import { IncomeStore, TotoIncome } from "../../model/IncomeStore";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 
 
-export class PostIncome implements TotoDelegate {
+export class PostIncome extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
         const body = req.body
-        const logger = execContext.logger;
-        const cid = execContext.cid;
-        const config = execContext.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+        const config = this.config as ControllerConfig;
 
         // Validate mandatory fields
         if (!body.amount) throw new ValidationError(400, "No amount provided")
@@ -27,16 +30,14 @@ export class PostIncome implements TotoDelegate {
         // Extract user
         const user = userContext.email;
 
-        let client;
 
         try {
 
             // Instantiate the DB
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Create the store
-            const incomeStore = new IncomeStore(db, execContext);
+            const incomeStore = new IncomeStore(db, config, cid);
 
             // Create the income
             const income = new TotoIncome(parseFloat(body.amount), body.date, body.description, body.currency, user, body.category)
@@ -60,9 +61,6 @@ export class PostIncome implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

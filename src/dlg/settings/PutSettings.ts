@@ -1,34 +1,35 @@
 import { Request } from "express";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
-import { UserContext } from "../../controller/model/UserContext";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { SettingsStore, UserSettings } from "../../model/SettingsStore";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 
 
-export class PutSettings implements TotoDelegate {
+export class PutSettings extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
         const user = userContext.email
-        const config = execContext.config as ControllerConfig;
-        const logger = execContext.logger;
-        const cid = execContext.cid;
+        const config = this.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
 
         // Build the settings object
         const settings = UserSettings.fromJSON(req.body)
 
-        let client;
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Update it 
-            await new SettingsStore(db, execContext).updateSettings(user, settings)
+            await new SettingsStore(db, config, cid).updateSettings(user, settings)
 
             return { updated: true }
 
@@ -44,9 +45,6 @@ export class PutSettings implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

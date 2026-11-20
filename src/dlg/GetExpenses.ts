@@ -1,10 +1,7 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { UserContext } from "../controller/model/UserContext";
-import { ValidationError } from "../controller/validation/Validator";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "./ParsedRequest";
 import { ControllerConfig } from "../Config";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
 import { ExpenseModel, PersistedExpense } from "../model/ExpenseModel";
 
 /**
@@ -26,16 +23,22 @@ import { ExpenseModel, PersistedExpense } from "../model/ExpenseModel";
  *       sortDesc: req.query.sortDesc
  *     }
  */
-export class GetExpenses implements TotoDelegate {
+export class GetExpenses extends TotoDelegate<ParsedRequest, any> {
 
-  async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
+
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+  async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
 
     const filter = req.query as Filter;
     const sort = req.query;
 
-    const logger = execContext.logger;
-    const cid = execContext.cid;
-    const config = execContext.config as ControllerConfig;
+    const logger = Logger.getInstance();
+    const cid = this.cid;
+    const config = this.config as ControllerConfig;
     
     const model = new ExpenseModel()
 
@@ -46,12 +49,10 @@ export class GetExpenses implements TotoDelegate {
 
     if (filter.maxResults == null) filter.maxResults = 0;
 
-    let client;
 
     try {
 
-      client = await config.getMongoClient();
-      const db = client.db(config.getDBName());
+      const db = await config.getMongoDb(config.getDBName());
 
       const cursor = db.collection(config.getCollections().expenses)
         .find(model.filterExpenses(filter), { limit: filter.maxResults })
@@ -81,9 +82,6 @@ export class GetExpenses implements TotoDelegate {
         throw error;
       }
 
-    }
-    finally {
-      if (client) client.close();
     }
   }
 }

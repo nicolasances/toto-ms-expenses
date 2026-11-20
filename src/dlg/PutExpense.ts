@@ -1,36 +1,37 @@
 import { Request } from "express";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
-import { TotoDelegate } from "../controller/model/TotoDelegate";
-import { UserContext } from "../controller/model/UserContext";
-import { TotoRuntimeError } from "../controller/model/TotoRuntimeError";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "./ParsedRequest";
 import { ControllerConfig } from "../Config";
-import { ValidationError } from "../controller/validation/Validator";
 import { ObjectId } from "mongodb";
 import { CurrencyConversion } from "../util/CurrencyConversion";
 import { ExpenseModel } from "../model/ExpenseModel";
 
 
-export class PutExpense implements TotoDelegate {
+export class PutExpense extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-        const config = execContext.config as ControllerConfig;
-        const logger = execContext.logger;
-        const cid = execContext.cid;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
 
-        let client
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const config = this.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
+
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             // Get the expense Id
             const tid = req.params.id;
 
             // Get the exchange rate
             const currency = req.body.currency ?? "EUR";
-            const amountInEuro = await new CurrencyConversion(execContext).convertAmountToEUR(req.body.amount, currency);
+            const amountInEuro = await new CurrencyConversion(cid).convertAmountToEUR(req.body.amount, currency);
 
             // Update
             await db.collection(config.getCollections().expenses).updateOne({ _id: new ObjectId(tid) }, new ExpenseModel().updateExpense(req.body, amountInEuro))
@@ -47,9 +48,6 @@ export class PutExpense implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
 
     }

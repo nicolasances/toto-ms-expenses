@@ -2,19 +2,18 @@ import moment from "moment";
 import { Db, ObjectId } from "mongodb";
 import { ControllerConfig } from "../Config";
 import { CurrencyConversion } from "../util/CurrencyConversion";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
 import { MonthTotal, MonthsTotals, YearTotal, YearsTotals } from "./ExpenseStore";
 
 export class IncomeStore {
 
     db: Db;
-    execContext: ExecutionContext;
+    cid?: string;
     config: ControllerConfig;
 
-    constructor(db: Db, execContext: ExecutionContext) {
+    constructor(db: Db, config: ControllerConfig, cid?: string) {
         this.db = db;
-        this.config = execContext.config as ControllerConfig;
-        this.execContext = execContext;
+        this.config = config;
+        this.cid = cid;
     }
 
     /**
@@ -26,7 +25,7 @@ export class IncomeStore {
     async saveIncome(income: TotoIncome): Promise<string> {
 
         // Get the rate (EUR to Currency, so will need to be inverted)
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(income.currency);
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(income.currency);
 
         // Invert the rate
         const rateToEUR = 1 / rate
@@ -145,7 +144,7 @@ export class IncomeStore {
     async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number): Promise<MonthsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
         let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } };
@@ -195,7 +194,7 @@ export class IncomeStore {
     async getTotalsPerYear(user: string, yearMonthGte: number, targetCurrency: string): Promise<YearsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
-        const { rate } = await new CurrencyConversion(this.execContext).getRateEURToTargetCurrency(targetCurrency)
+        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
         const filter = { $match: { user: user, yearMonth: { $gte: yearMonthGte } } };

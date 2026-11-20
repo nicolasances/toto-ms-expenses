@@ -1,7 +1,6 @@
 
 import { ObjectId } from "mongodb";
 import { CurrencyConversion } from "../util/CurrencyConversion";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
 
 export interface ITag {
 
@@ -48,11 +47,11 @@ export class Tag implements ITag {
 
 }
 
-export async function convertCurrency(tag: Tag, targetCurrency: string, execContext: ExecutionContext): Promise<Tag> {
+export async function convertCurrency(tag: Tag, targetCurrency: string, cid?: string): Promise<Tag> {
 
     if (targetCurrency == "EUR") return tag;
 
-    const rate = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(targetCurrency);
+    const rate = await new CurrencyConversion(cid).getRateEURToTargetCurrency(targetCurrency);
 
     tag.localCurrencyAmount = rate.rate * tag.amountInEuro!;
 

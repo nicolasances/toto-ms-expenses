@@ -1,10 +1,7 @@
 import { Request } from "express";
-import { ExecutionContext } from "../../controller/model/ExecutionContext";
-import { UserContext } from "../../controller/model/UserContext";
-import { TotoDelegate } from "../../controller/model/TotoDelegate";
+import { TotoDelegate, UserContext, Logger, ValidationError, TotoRuntimeError } from "totoms";
+import { ParsedRequest } from "../ParsedRequest";
 import { ControllerConfig } from "../../Config";
-import { ValidationError } from "../../controller/validation/Validator";
-import { TotoRuntimeError } from "../../controller/model/TotoRuntimeError";
 import { CurrencyConversion } from "../../util/CurrencyConversion";
 import moment from "moment-timezone";
 
@@ -12,24 +9,28 @@ import moment from "moment-timezone";
  * This class retrieves the list of months that have not been reviewed. 
  * A month is considered "not reviewed" when there are still expenses that have not been "consolidated".
  */
-export class GetUnreviewedMonths implements TotoDelegate {
+export class GetUnreviewedMonths extends TotoDelegate<ParsedRequest, any> {
 
-    async do(req: Request, userContext: UserContext, execContext: ExecutionContext): Promise<any> {
+  parseRequest(req: Request): ParsedRequest {
 
-        const config = execContext.config as ControllerConfig;
-        const logger = execContext.logger;
-        const cid = execContext.cid;
+    return { params: req.params, query: req.query, body: req.body, headers: req.headers };
+
+  }
+
+    async do(req: ParsedRequest, userContext: UserContext): Promise<any> {
+
+        const config = this.config as ControllerConfig;
+        const logger = Logger.getInstance();
+        const cid = this.cid;
 
         const targetCurrency = req.query.targetCurrency ?? "EUR";
 
-        const currencyConvRate = await new CurrencyConversion(execContext).getRateEURToTargetCurrency(String(targetCurrency));
+        const currencyConvRate = await new CurrencyConversion(cid).getRateEURToTargetCurrency(String(targetCurrency));
 
-        let client;
 
         try {
 
-            client = await config.getMongoClient();
-            const db = client.db(config.getDBName());
+            const db = await config.getMongoDb(config.getDBName());
 
             const query = [
                 { $match: { user: userContext.email, consolidated: { $ne: true }, yearMonth: { $ne: moment().tz("Europe/Rome").format("YYYYMM") } } },
@@ -78,9 +79,6 @@ export class GetUnreviewedMonths implements TotoDelegate {
                 throw error;
             }
 
-        }
-        finally {
-            if (client) client.close();
         }
     }
 

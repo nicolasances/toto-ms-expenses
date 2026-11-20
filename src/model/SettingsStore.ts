@@ -1,5 +1,4 @@
 import { Db } from "mongodb";
-import { ExecutionContext } from "../controller/model/ExecutionContext";
 import { ControllerConfig } from "../Config";
 
 const F_USER = "user"
@@ -10,13 +9,13 @@ const F_DASHBOARD_HIGHLIGHTS_VERSION = "dashboardHighlightsVersion"
 export class SettingsStore {
 
     db: Db;
-    execContext: ExecutionContext;
+    cid?: string;
     config: ControllerConfig;
 
-    constructor(db: Db, execContext: ExecutionContext) {
+    constructor(db: Db, config: ControllerConfig, cid?: string) {
         this.db = db;
-        this.config = execContext.config as ControllerConfig;
-        this.execContext = execContext;
+        this.config = config;
+        this.cid = cid;
     }
 
 
