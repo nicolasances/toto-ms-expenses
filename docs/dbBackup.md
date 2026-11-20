@@ -17,4 +17,4 @@ The backup happens in the bucket that is provided **as an Environment Variable**
 ## Restore
 The restore is exposed **through an API**. <br>
 
-Both `POST /backup` and `POST /restore` are `totoms` delegates (`src/dlg/backup/StartBackup.ts` and `StartRestore.ts`) that extend `TotoDelegate` and read the database through the shared client provided by `ControllerConfig.getMongoDb(...)` (from `TotoControllerConfig`).
+Both `POST /expenses/backup` (the target of the scheduled backup) and `POST /expenses/restore` are `totoms` delegates (`src/dlg/backup/StartBackup.ts` and `StartRestore.ts`) that extend `TotoDelegate` and read the database through the shared client provided by `ControllerConfig.getMongoDb(...)` (from `TotoControllerConfig`).
