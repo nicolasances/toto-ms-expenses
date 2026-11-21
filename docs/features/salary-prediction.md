@@ -70,3 +70,8 @@ Today is November 2026. The window is August, September, October 2026.
 - `src/dlg/stats/GetIncomesTotalPerMonth.ts`: reference for how income stats endpoints are built.
 - `src/util/CurrencyConversion.ts`: currency conversion.
 - `src/index.ts`: where endpoints are registered.
+
+## Implementation notes
+- The prediction logic lives in `src/model/SalaryPredictor.ts` (pure, unit tested in `test/model/SalaryPredictor.test.ts`). The endpoint is `src/dlg/predictions/GetSalaryPrediction.ts`.
+- Monthly salary totals come from `IncomeStore.getTotalsPerMonth`, which now accepts an optional `category` filter. The currency conversion is therefore exactly the one used by the other income stats: an income whose currency differs from the target currency is multiplied by the EUR-to-target rate. Any limitation of that conversion applies to this endpoint as well.
+- The "current month" is determined in the `Europe/Rome` timezone, like the other stats endpoints.
