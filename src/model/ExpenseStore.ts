@@ -59,13 +59,13 @@ export class ExpenseStore {
         const { rate } = await currencyConversionUtil.getRateEURToTargetCurrency(targetCurrency)
 
         // Converge all expenses to same currency and calculate total
-        const alignedTotals = currencyConversionUtil.alignToSameCurrency(result.map((g) => { return { currency: g._id, amount: g.total } }), targetCurrency, rate)
+        const alignedTotals = currencyConversionUtil.alignToSameCurrency(result.map((g) => { return { currency: g._id.currency, amount: g.total } }), targetCurrency, rate)
 
         // Return the total
         return {
             yearMonth: yearMonth,
             currency: targetCurrency,
-            total: alignedTotals.map(v => v.amount).reduce((prev, current, currentIndex) => { return prev ?? 0 + current })
+            total: alignedTotals.map(v => v.amount).reduce((prev, current) => { return (prev ?? 0) + current })
         }
 
     }
