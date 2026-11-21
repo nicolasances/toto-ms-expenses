@@ -54,18 +54,18 @@ export class ExpenseStore {
         if (!result || result.length == 0) return { yearMonth: yearMonth, currency: targetCurrency, total: 0 }
 
         // Get the conversion rate for the currency conversion (EUR to target currency)
-        const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
+        const currencyConversionUtil = new CurrencyConversion(this.cid);
 
-        // Convert the amount in the target currency, if needed
-        let amountInLocalCurrency = result[0].total;
+        const { rate } = await currencyConversionUtil.getRateEURToTargetCurrency(targetCurrency)
 
-        if (result[0]._id.currency != targetCurrency) amountInLocalCurrency = parseFloat((rate * amountInLocalCurrency).toFixed(2))
+        // Converge all expenses to same currency and calculate total
+        const alignedTotals = currencyConversionUtil.alignToSameCurrency(result.map((g) => { return { currency: g._id, amount: g.total } }), targetCurrency, rate)
 
         // Return the total
         return {
             yearMonth: yearMonth,
             currency: targetCurrency,
-            total: amountInLocalCurrency
+            total: alignedTotals.map(v => v.amount).reduce((prev, current, currentIndex) => { return prev ?? 0 + current })
         }
 
     }
@@ -642,13 +642,13 @@ export class AverageMonthlyCategorySpendPerYear {
     }
 
     addAvgMonthlySpend(amount: number, year: number) {
-        
+
         // Find an existing entry for the year
         let found = false
         for (const spend of this.avgMonthlySpend) {
             if (spend.year === year) {
                 spend.amount += amount;
-                found = true; 
+                found = true;
                 break;
             }
         }

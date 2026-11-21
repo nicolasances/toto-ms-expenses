@@ -91,6 +91,22 @@ export class CurrencyConversion {
     });
   }
 
+  alignToSameCurrency(amounts: Amount[], targetCurrency: string, rate: number): Amount[] {
+
+    return amounts.map((amt) => {
+
+      if (amt.currency != targetCurrency) return {amount: amt.amount * rate, currency: targetCurrency}
+
+      return amt
+    })
+
+  }
+
+}
+
+export interface Amount {
+  currency: string, 
+  amount: number
 }
 
 
