@@ -19,6 +19,7 @@ import { GetIncomes } from "./dlg/income/GetIncomes";
 import { GetIncome } from "./dlg/income/GetIncome";
 import { PutIncome } from "./dlg/income/PutIncome";
 import { GetIncomesTotalPerMonth } from "./dlg/stats/GetIncomesTotalPerMonth";
+import { GetSalaryPrediction } from "./dlg/predictions/GetSalaryPrediction";
 import { StartRestore } from "./dlg/backup/StartRestore";
 import { GetExpense } from "./dlg/GetExpense";
 import { GetSettings } from "./dlg/settings/GetSettings";
@@ -69,6 +70,7 @@ const config: TotoMicroserviceConfiguration = {
             { method: 'GET', path: '/stats/savingsPerMonth', delegate: GetSavingsPerMonth },
             { method: 'GET', path: '/stats/categoryTotalsPerMonth', delegate: GetCategoriesTotalsPerMonth },
             { method: 'GET', path: '/stats/categoryAvgMonthlySpendPerYear', delegate: GetCategoriesAvgMonthlySpendPerYear },
+            { method: 'GET', path: '/predictions/salary', delegate: GetSalaryPrediction },
             { method: 'GET', path: '/settings', delegate: GetSettings },
             { method: 'PUT', path: '/settings', delegate: PutSettings },
         ],

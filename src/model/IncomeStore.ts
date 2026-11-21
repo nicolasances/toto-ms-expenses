@@ -139,15 +139,18 @@ export class IncomeStore {
      * Calculates the total amount of incomes for every month starting at yearMonthGte and ending today
      * 
      * @param user the user email
-     * @param yearMonthGte the yearMonth that delimits the start of the interval to consider. 
+     * @param yearMonthGte the yearMonth that delimits the start of the interval to consider.
+     * @param category (optional) if specified, only the incomes of this category are considered
      */
-    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number): Promise<MonthsTotals> {
+    async getTotalsPerMonth(user: string, yearMonthGte: number, targetCurrency: string, yearMonthLte: number, category?: string): Promise<MonthsTotals> {
 
         // Get the exchange rate from EUR to Target Currency
         const { rate } = await new CurrencyConversion(this.cid).getRateEURToTargetCurrency(targetCurrency)
 
         // Prepare the filter
-        let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } };
+        let filter = { $match: { user: user, $and: [{ yearMonth: { $gte: yearMonthGte } }, { yearMonth: { $lte: yearMonthLte } }] } } as any;
+
+        if (category) filter.$match.category = category;
 
         // Prepare the grouping
         let groupByYearmonth = { $group: { _id: { yearMonth: '$yearMonth', currency: '$currency' }, amount: { $sum: '$amount' } } }
